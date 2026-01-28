@@ -4,6 +4,7 @@ import com.example.performance_management_system.common.exception.BusinessExcept
 import com.example.performance_management_system.config.security.SecurityUtil;
 import com.example.performance_management_system.review.model.Review;
 import com.example.performance_management_system.review.repository.ReviewRepository;
+import com.example.performance_management_system.reviewcycle.model.ReviewCycleStatus;
 import com.example.performance_management_system.reviewcycle.repository.ReviewCycleRepository;
 import com.example.performance_management_system.user.service.HierarchyService;
 import org.springframework.data.domain.Page;
@@ -50,8 +51,13 @@ public class ReviewService {
             throw new BusinessException("You can submit self-review only for yourself");
         }
 
-        review.setSelfReviewComments(comments);
+        if(review.getReviewCycle().getStatus()!= ReviewCycleStatus.ACTIVE){
+            throw new BusinessException("Review Cycle is not Active");
+        }
+
         review.submitSelfReview();
+        review.setSelfReviewComments(comments);
+
 
         return repository.save(review);
     }
@@ -73,8 +79,13 @@ public class ReviewService {
             );
         }
 
-        review.setManagerReviewComments(comments);
+        if(review.getReviewCycle().getStatus()!= ReviewCycleStatus.ACTIVE){
+            throw new BusinessException("Review cycle is not Active");
+        }
+
         review.submitManagerReview();
+        review.setManagerReviewComments(comments);
+
 
         return repository.save(review);
     }
