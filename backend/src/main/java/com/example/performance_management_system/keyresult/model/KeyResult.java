@@ -5,30 +5,35 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-@Entity
-@Table(name = "key_results")
 @Getter
 @Setter
+@Entity
+@Table(name = "key_result")
 public class KeyResult {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "goal_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "goal_id", nullable = false)
     private Goal goal;
 
-    private String title;
+    @Column(nullable = false)
     private String metric;
 
-    private BigDecimal target;
-    private BigDecimal progress;
+    @Column(nullable = false)
+    private Double targetValue;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    @Column(nullable = false)
+    private Double currentValue = 0.0;
+
+    public void updateProgress(Double value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Progress cannot be negative");
+        }
+        this.currentValue = value;
+    }
+
+    // getters & setters
 }
-

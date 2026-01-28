@@ -1,53 +1,80 @@
 package com.example.performance_management_system.review.model;
 
-import com.example.performance_management_system.performancecycle.model.PerformanceCycle;
-import com.example.performance_management_system.rating.model.Rating;
+import com.example.performance_management_system.goal.model.Goal;
 import com.example.performance_management_system.reviewcycle.model.ReviewCycle;
-import com.example.performance_management_system.user.model.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "review")
-@Getter
 @Setter
+@Getter
+@Entity
+@Table(
+        name = "review",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_review_employee_cycle",
+                        columnNames = {"employee_id", "review_cycle_id"}
+                )
+        }
+)
 public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "cycle_id")
-    private PerformanceCycle performanceCycle;
+    @Column(name = "employee_id", nullable = false)
+    private Long employeeId;
 
-    @ManyToOne
-    @JoinColumn(name = "review_cycles_id")
+    @Column(name = "manager_id", nullable = false)
+    private Long managerId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "review_cycle_id", nullable = false)
     private ReviewCycle reviewCycle;
 
-    @ManyToOne
-    @JoinColumn(name = "employee_id")
-    private User employee;
+    @Enumerated(EnumType.STRING)
+    private ReviewStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "reviewer_id")
-    private User reviewer;
+    @Lob
+    private String selfReviewComments;
 
-    private BigDecimal status;
-
-    @Column(columnDefinition = "TEXT")
-    private String summary;
+    @Lob
+    private String managerReviewComments;
 
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private LocalDateTime submittedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "final_rating_id")
-    private Rating rating;
+    /* ---------- Domain Rules ---------- */
+
+    public void submitSelfReview() {
+        if (status != ReviewStatus.NOT_STARTED) {
+            throw new IllegalStateException("Self-review already submitted");
+        }
+        status = ReviewStatus.SELF_REVIEW_SUBMITTED;
+    }
+
+    public void submitManagerReview() {
+        if (status != ReviewStatus.SELF_REVIEW_SUBMITTED) {
+            throw new IllegalStateException("Manager review not allowed yet");
+        }
+        status = ReviewStatus.MANAGER_REVIEW_SUBMITTED;
+    }
+
+    public void finalizeReview() {
+        if (status != ReviewStatus.MANAGER_REVIEW_SUBMITTED) {
+            throw new IllegalStateException("Review not ready to finalize");
+        }
+        status = ReviewStatus.FINALIZED;
+    }
+
+    @PrePersist
+    void prePersist() {
+        createdAt = LocalDateTime.now();
+        status = ReviewStatus.NOT_STARTED;
+    }
+
+    // getters & setters
 }
-

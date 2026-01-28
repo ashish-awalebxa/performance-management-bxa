@@ -1,39 +1,79 @@
 package com.example.performance_management_system.goal.model;
 
-import com.example.performance_management_system.user.model.User;
+
+import com.example.performance_management_system.performancecycle.model.PerformanceCycle;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-@Entity
-@Table(name = "goals")
+
 @Getter
 @Setter
+@Entity
+@Table(name = "goal")
 public class Goal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "owner_id")
-    private User owner;
+    @Column(nullable = false)
+    private Long employeeId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "performance_cycle_id", nullable = false)
+    private PerformanceCycle performanceCycle;
+
+    @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
 
-    private String type;
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GoalStatus status;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    @OneToMany(
+            mappedBy = "goal",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<com.example.performance_management_system.keyresult.model.KeyResult> keyResults = new ArrayList<>();
 
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-}
 
+    /* ---------- Domain Rules ---------- */
+
+    public void submit() {
+        if (status != GoalStatus.DRAFT) {
+            throw new IllegalStateException("Only DRAFT goals can be submitted");
+        }
+        status = GoalStatus.SUBMITTED;
+    }
+
+    public void approve() {
+        if (status != GoalStatus.SUBMITTED) {
+            throw new IllegalStateException("Only SUBMITTED goals can be approved");
+        }
+        status = GoalStatus.APPROVED;
+    }
+
+    public void reject() {
+        if (status != GoalStatus.SUBMITTED) {
+            throw new IllegalStateException("Only SUBMITTED goals can be rejected");
+        }
+        status = GoalStatus.REJECTED;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.status = GoalStatus.DRAFT;
+    }
+
+    // getters & setters
+}

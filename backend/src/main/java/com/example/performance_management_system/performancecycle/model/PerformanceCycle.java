@@ -1,36 +1,75 @@
 package com.example.performance_management_system.performancecycle.model;
 
-import com.example.performance_management_system.user.model.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "performance_cycle")
 @Getter
 @Setter
+@Entity
+@Table(
+        name = "performance_cycle",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_cycle_name_type",
+                        columnNames = {"name", "cycle_type"}
+                )
+        }
+)
 public class PerformanceCycle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long cycleId;
+    private Long id;
 
-    private String cycleName;
+    @Column(nullable = false)
+    private String name;
+
+    @Column(name = "cycle_type", nullable = false)
+    private String cycleType; // ANNUAL / QUARTERLY
+
+    @Column(nullable = false)
     private LocalDate startDate;
+
+    @Column(nullable = false)
     private LocalDate endDate;
-    private String status;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CycleStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "created_by")
-    private User createdBy;
+    @Column(nullable = false)
+    private String createdBy;
 
-    private LocalDate createdDate;
-    private LocalDate reviewDeadline;
-    private String feedbackWindow;
+    private LocalDateTime createdAt;
+
+    /* ---------- Domain Methods (IMPORTANT) ---------- */
+
+    public void activate() {
+        if (this.status != CycleStatus.DRAFT) {
+            throw new IllegalStateException("Only DRAFT cycles can be activated");
+        }
+        this.status = CycleStatus.ACTIVE;
+    }
+
+    public void close() {
+        if (this.status != CycleStatus.ACTIVE) {
+            throw new IllegalStateException("Only ACTIVE cycles can be closed");
+        }
+        this.status = CycleStatus.CLOSED;
+    }
+
+    /* ---------- JPA Hooks ---------- */
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.status = CycleStatus.DRAFT;
+    }
+
+    // getters & setters omitted for brevity (generate them)
 }
 

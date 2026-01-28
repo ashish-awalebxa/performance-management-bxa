@@ -1,56 +1,78 @@
 package com.example.performance_management_system.rating.model;
 
-import com.example.performance_management_system.department.model.Department;
 import com.example.performance_management_system.performancecycle.model.PerformanceCycle;
-import com.example.performance_management_system.user.model.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "rating")
 @Getter
 @Setter
+@Entity
+@Table(
+        name = "rating",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_rating_employee_cycle",
+                        columnNames = {"employee_id", "performance_cycle_id"}
+                )
+        }
+)
 public class Rating {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long finalRatingId;
+    private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "cycle_id")
+    @Column(name = "employee_id", nullable = false)
+    private Long employeeId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "performance_cycle_id", nullable = false)
     private PerformanceCycle performanceCycle;
 
-    @ManyToOne
-    @JoinColumn(name = "employee_id")
-    private User employee;
+    @Column(nullable = false)
+    private Double score; // e.g. 1.0 – 5.0
 
-    @ManyToOne
-    @JoinColumn(name = "department_id")
-    private Department department;
+    @Enumerated(EnumType.STRING)
+    private RatingStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "manager_id")
-    private User manager;
+    private String managerJustification;
+    private String hrJustification;
 
-    @ManyToOne
-    @JoinColumn(name = "skip_manager_id")
-    private User skipManager;
-
-    private BigDecimal finalRatingValue;
-    private String performanceCategory;
-
-    @Column(columnDefinition = "TEXT")
-    private String remarks;
-
-    @ManyToOne
-    @JoinColumn(name = "locked_by")
-    private User lockedBy;
-
-    private LocalDateTime lockedAt;
     private LocalDateTime createdAt;
-}
 
+    /* ---------- Domain Rules ---------- */
+
+    public void submitByManager() {
+        if (status != RatingStatus.DRAFT) {
+            throw new IllegalStateException("Only DRAFT ratings can be submitted");
+        }
+        status = RatingStatus.MANAGER_SUBMITTED;
+    }
+
+    public void calibrateByHr(Double newScore, String justification) {
+        if (status != RatingStatus.MANAGER_SUBMITTED) {
+            throw new IllegalStateException("Only MANAGER_SUBMITTED ratings can be calibrated");
+        }
+        this.score = newScore;
+        this.hrJustification = justification;
+        status = RatingStatus.HR_CALIBRATED;
+    }
+
+    public void finalizeRating() {
+        if (status != RatingStatus.HR_CALIBRATED) {
+            throw new IllegalStateException("Only HR_CALIBRATED ratings can be finalized");
+        }
+        status = RatingStatus.FINALIZED;
+    }
+
+    @PrePersist
+    void prePersist() {
+        createdAt = LocalDateTime.now();
+        status = RatingStatus.DRAFT;
+    }
+
+    // getters & setters
+}
