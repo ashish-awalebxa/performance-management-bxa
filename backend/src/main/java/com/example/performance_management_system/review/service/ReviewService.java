@@ -6,6 +6,8 @@ import com.example.performance_management_system.review.model.Review;
 import com.example.performance_management_system.review.repository.ReviewRepository;
 import com.example.performance_management_system.reviewcycle.repository.ReviewCycleRepository;
 import com.example.performance_management_system.user.service.HierarchyService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,5 +84,17 @@ public class ReviewService {
         return repository.findById(id)
                 .orElseThrow(() -> new BusinessException("Review not found"));
     }
+
+    public Page<Review> getReviewsForManager(
+            Long managerId,
+            int page,
+            int size
+    ) {
+        return repository.findByManagerId(
+                managerId,
+                PageRequest.of(page, size)
+        );
+    }
+
 }
 
