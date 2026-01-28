@@ -8,6 +8,8 @@ import com.example.performance_management_system.rating.dto.CreateRatingRequest;
 import com.example.performance_management_system.rating.model.Rating;
 import com.example.performance_management_system.rating.repository.RatingRepository;
 import com.example.performance_management_system.user.service.HierarchyService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,5 +88,17 @@ public class RatingService {
         return repository.findById(id)
                 .orElseThrow(() -> new BusinessException("Rating not found"));
     }
+
+    public Page<Rating> getRatingsForCycle(
+            Long cycleId,
+            int page,
+            int size
+    ) {
+        return repository.findByPerformanceCycle_Id(
+                cycleId,
+                PageRequest.of(page, size)
+        );
+    }
+
 }
 

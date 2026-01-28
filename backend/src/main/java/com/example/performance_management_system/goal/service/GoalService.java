@@ -12,6 +12,8 @@ import com.example.performance_management_system.user.service.HierarchyService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 public class GoalService {
@@ -84,5 +86,18 @@ public class GoalService {
         return goalRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Goal not found"));
     }
+
+
+    public Page<Goal> getGoalsForEmployee(
+            Long employeeId,
+            int page,
+            int size
+    ) {
+        return goalRepository.findByEmployeeId(
+                employeeId,
+                PageRequest.of(page, size)
+        );
+    }
+
 }
 

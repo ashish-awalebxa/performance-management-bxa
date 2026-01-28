@@ -3,6 +3,7 @@ package com.example.performance_management_system.auth.controller;
 import com.example.performance_management_system.config.security.jwt.JwtUtil;
 import com.example.performance_management_system.user.model.User;
 import com.example.performance_management_system.user.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestParam String username,
+    public String login(@Valid @RequestParam String username,
                         @RequestParam String password) {
 
         User user = userService.getByUsername(username);
