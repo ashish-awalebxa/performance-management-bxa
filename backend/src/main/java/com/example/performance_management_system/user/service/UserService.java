@@ -80,6 +80,27 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException("User not found"));
     }
 
+    @Transactional
+    public User updateCurrentUser(String name, String email) {
+
+        Long userId = SecurityUtil.userId();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        // Optional: prevent duplicate email
+        if (!user.getEmail().equals(email)
+                && userRepository.findByEmail(email).isPresent()) {
+            throw new BusinessException("Email already in use");
+        }
+
+        user.setName(name);
+        user.setEmail(email);
+
+        return userRepository.save(user);
+    }
+
+
 
 
 

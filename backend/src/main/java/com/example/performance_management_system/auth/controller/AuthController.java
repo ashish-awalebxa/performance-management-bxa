@@ -3,6 +3,7 @@ package com.example.performance_management_system.auth.controller;
 import com.example.performance_management_system.auth.dto.LoginRequest;
 import com.example.performance_management_system.auth.dto.MeResponse;
 import com.example.performance_management_system.auth.dto.SignupRequest;
+import com.example.performance_management_system.auth.dto.UpdateMeRequest;
 import com.example.performance_management_system.config.security.jwt.JwtUtil;
 import com.example.performance_management_system.user.model.User;
 import com.example.performance_management_system.user.service.UserService;
@@ -62,6 +63,27 @@ public class AuthController {
         return response;
 
     }
+
+    @PutMapping("/me")
+    public MeResponse updateMe(@Valid @RequestBody UpdateMeRequest request){
+        User user = userService.updateCurrentUser(request.name,
+                request.email
+        );
+
+        MeResponse response = new MeResponse();
+        response.id = user.getId();
+        response.name = user.getName();
+        response.email = user.getEmail();
+        response.role = user.getRole().getName();
+        response.departmentType = user.getDepartment().getType();
+        response.departmentDisplayName = user.getDepartment().getDisplayName();
+        response.managerId = user.getManagerId();
+        response.active = user.getActive();
+
+        return response;
+    }
+
+
 
 
 
