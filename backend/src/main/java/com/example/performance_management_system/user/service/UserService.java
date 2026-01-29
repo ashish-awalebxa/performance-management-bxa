@@ -74,6 +74,30 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException("User not found"));
     }
 
+    public User getCurrentUser() {
+        Long userId = SecurityUtil.userId();
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("User not found"));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public User registerUser(String name,
                              String email,
                              String password,
