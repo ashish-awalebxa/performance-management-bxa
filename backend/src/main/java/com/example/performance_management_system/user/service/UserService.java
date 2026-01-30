@@ -9,6 +9,7 @@ import com.example.performance_management_system.department.service.DepartmentSe
 import com.example.performance_management_system.role.model.RoleEntity;
 import com.example.performance_management_system.role.repository.RoleRepository;
 import com.example.performance_management_system.user.dto.CreateUserRequest;
+import com.example.performance_management_system.user.dto.UpdateUserRequest;
 import com.example.performance_management_system.user.model.User;
 import com.example.performance_management_system.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -106,6 +107,44 @@ public class UserService {
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
     }
+
+
+    @Transactional
+    public User updateUser(Long userId, UpdateUserRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        // Optional safety: prevent self-update via admin API
+        if (SecurityUtil.userId().equals(userId)) {
+            throw new BusinessException("Use /api/auth/me to update your own profile");
+        }
+
+        // Email uniqueness check
+        if (!user.getEmail().equals(request.email)
+                && userRepository.findByEmail(request.email).isPresent()) {
+            throw new BusinessException("Email already in use");
+        }
+
+        RoleEntity role = roleRepository.findByName(request.role)
+                .orElseThrow(() -> new BusinessException("Role not found"));
+
+        Department department = departmentService.getOrCreate(
+                request.departmentType,
+                request.departmentDisplayName,
+                request.managerId
+        );
+
+        user.setName(request.name);
+        user.setEmail(request.email);
+        user.setRole(role);
+        user.setDepartment(department);
+        user.setManagerId(request.managerId);
+        user.setActive(request.active);
+
+        return userRepository.save(user);
+    }
+
 
 
 

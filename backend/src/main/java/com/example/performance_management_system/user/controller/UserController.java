@@ -2,6 +2,7 @@ package com.example.performance_management_system.user.controller;
 
 
 import com.example.performance_management_system.user.dto.CreateUserRequest;
+import com.example.performance_management_system.user.dto.UpdateUserRequest;
 import com.example.performance_management_system.user.dto.UserDetailResponse;
 import com.example.performance_management_system.user.dto.UserListResponse;
 import com.example.performance_management_system.user.model.User;
@@ -70,6 +71,28 @@ public class UserController {
 
         return dto;
     }
+
+    @PutMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('HR')")
+    public UserDetailResponse updateUser(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserRequest request
+    ) {
+        User user = userService.updateUser(userId, request);
+
+        UserDetailResponse dto = new UserDetailResponse();
+        dto.id = user.getId();
+        dto.name = user.getName();
+        dto.email = user.getEmail();
+        dto.role = user.getRole().getName();
+        dto.departmentType = user.getDepartment().getType();
+        dto.departmentDisplayName = user.getDepartment().getDisplayName();
+        dto.managerId = user.getManagerId();
+        dto.active = user.getActive();
+
+        return dto;
+    }
+
 
 
 
