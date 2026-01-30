@@ -1,9 +1,7 @@
 package com.example.performance_management_system.auth.controller;
 
-import com.example.performance_management_system.auth.dto.LoginRequest;
-import com.example.performance_management_system.auth.dto.MeResponse;
-import com.example.performance_management_system.auth.dto.SignupRequest;
-import com.example.performance_management_system.auth.dto.UpdateMeRequest;
+import com.example.performance_management_system.auth.dto.*;
+import com.example.performance_management_system.auth.service.PasswordResetService;
 import com.example.performance_management_system.config.security.jwt.JwtUtil;
 import com.example.performance_management_system.user.model.User;
 import com.example.performance_management_system.user.service.UserService;
@@ -19,13 +17,16 @@ public class AuthController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordResetService passwordResetService;
 
 
 
-    public AuthController(UserService userService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+    public AuthController(UserService userService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder,
+                          PasswordResetService passwordResetService) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/login")
@@ -82,6 +83,34 @@ public class AuthController {
 
         return response;
     }
+
+
+    @PostMapping("/logout")
+    public void logout() {
+        // Stateless logout:
+        // Client is responsible for deleting the JWT.
+        // This endpoint exists for API consistency & future extension.
+    }
+
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+
+        // Token-only: return token directly
+        return passwordResetService.createResetToken(request.email);
+    }
+
+
+    @PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+
+        passwordResetService.resetPassword(
+                request.token,
+                request.newPassword
+        );
+    }
+
+
+
 
 
 
