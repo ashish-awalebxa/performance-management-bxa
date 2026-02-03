@@ -3,14 +3,20 @@ package com.example.performance_management_system.user.service;
 import com.example.performance_management_system.common.exception.BusinessException;
 import com.example.performance_management_system.user.model.User;
 import org.springframework.stereotype.Service;
+import com.example.performance_management_system.user.repository.UserRepository;
+
+import java.util.List;
 
 @Service
 public class HierarchyService {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public HierarchyService(UserService userService) {
+    public HierarchyService(UserRepository userRepository,
+                            UserService userService) {
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -39,4 +45,12 @@ public class HierarchyService {
             );
         }
     }
+
+    public List<Long> getDirectReporteeIds(Long managerId) {
+        return userRepository.findByManagerId(managerId)
+                .stream()
+                .map(User::getId)
+                .toList();
+    }
+
 }

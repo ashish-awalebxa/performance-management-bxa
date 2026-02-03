@@ -6,6 +6,9 @@ import com.example.performance_management_system.department.model.Department;
 import com.example.performance_management_system.department.repository.DepartmentRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import jakarta.transaction.Transactional;
+
 @Service
 public class DepartmentService {
 
@@ -15,22 +18,31 @@ public class DepartmentService {
         this.repository = repository;
     }
 
+    @Transactional
     public Department getOrCreate(
             DepartmentType type,
             String displayName,
             Long headId
     ) {
-        return repository.findByType(type)
+        Department dept = repository.findByType(type)
                 .orElseGet(() -> {
-                    Department dept = new Department();
-                    dept.setType(type);
-                    dept.setDisplayName(
-                            displayName != null ? displayName : type.name()
-                    );
-                    dept.setHeadId(headId);
-                    dept.setActive(true);
-                    return repository.save(dept);
+                    Department d = new Department();
+                    d.setType(type);
+                    d.setActive(true);
+                    return d;
                 });
+
+        // 🔥 ALWAYS update mutable fields
+        dept.setDisplayName(
+                displayName != null ? displayName : type.name()
+        );
+        dept.setHeadId(headId);
+
+        // 🔥 ALWAYS save (create OR update)
+        return repository.save(dept);
+    }
+
+    public List<Department> getAllDepartments() {
+        return repository.findAll();
     }
 }
-

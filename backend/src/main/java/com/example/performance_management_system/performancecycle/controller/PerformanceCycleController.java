@@ -1,10 +1,14 @@
 package com.example.performance_management_system.performancecycle.controller;
 
+import com.example.performance_management_system.common.exception.BusinessException;
 import com.example.performance_management_system.performancecycle.dto.CreatePerformanceCycleRequest;
 import com.example.performance_management_system.performancecycle.model.PerformanceCycle;
 import com.example.performance_management_system.performancecycle.service.PerformanceCycleService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/performance-cycles")
@@ -28,6 +32,22 @@ public class PerformanceCycleController {
         cycle.setCreatedBy("HR_ADMIN"); // later from security context
 
         return service.createCycle(cycle);
+    }
+
+    @PreAuthorize("hasRole('HR') or hasRole('ADMIN')")
+    @GetMapping
+    public List<PerformanceCycle> list() {
+        return service.getAllCycles();
+    }
+
+    @GetMapping("/active-cycle")
+    @PreAuthorize("hasRole('HR') or hasRole('ADMIN') or hasRole('EMPLOYEE') or hasRole('MANAGER')")
+    public ResponseEntity<PerformanceCycle> getActiveCycle() {
+        try {
+            return ResponseEntity.ok(service.getActiveCycle());
+        } catch (BusinessException ex) {
+            return ResponseEntity.noContent().build(); // ✅ 204
+        }
     }
 
     @PreAuthorize("hasRole('HR')")

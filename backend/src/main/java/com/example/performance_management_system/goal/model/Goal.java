@@ -37,6 +37,11 @@ public class Goal {
     @Column(nullable = false)
     private GoalStatus status;
 
+    @Column(length = 1000)
+    private String rejectionReason;
+
+    private LocalDateTime rejectedAt;
+
     @OneToMany(
             mappedBy = "goal",
             cascade = CascadeType.ALL,
@@ -62,12 +67,15 @@ public class Goal {
         status = GoalStatus.APPROVED;
     }
 
-    public void reject() {
+    public void reject(String reason) {
         if (status != GoalStatus.SUBMITTED) {
             throw new IllegalStateException("Only SUBMITTED goals can be rejected");
         }
-        status = GoalStatus.REJECTED;
+        this.status = GoalStatus.REJECTED;
+        this.rejectionReason = reason;
+        this.rejectedAt = LocalDateTime.now();
     }
+
 
     @PrePersist
     public void prePersist() {

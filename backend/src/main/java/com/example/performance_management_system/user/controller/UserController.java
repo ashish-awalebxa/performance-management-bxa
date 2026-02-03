@@ -36,7 +36,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('HR')")
     public Page<UserListResponse> listUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "5") int size
     ) {
         return userService.getAllUsers(PageRequest.of(page, size))
                 .map(user -> {

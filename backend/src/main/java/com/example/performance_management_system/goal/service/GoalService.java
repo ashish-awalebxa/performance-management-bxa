@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import java.util.List;
+
 @Service
 public class GoalService {
 
@@ -81,6 +83,28 @@ public class GoalService {
         return goalRepository.save(goal);
     }
 
+    @PreAuthorize("hasRole('MANAGER')")
+    @Transactional
+    public Goal rejectGoal(Long goalId, String reason) {
+
+        Goal goal = findGoal(goalId);
+
+        Long currentUserId = SecurityUtil.userId();
+        String role = SecurityUtil.role();
+
+        // HR / ADMIN bypass hierarchy (future-safe)
+        if (!role.equals("HR") && !role.equals("ADMIN")) {
+            hierarchyService.validateManagerAccess(
+                    currentUserId,
+                    goal.getEmployeeId()
+            );
+        }
+
+        goal.reject(reason);
+        return goalRepository.save(goal);
+    }
+
+
 
     private Goal findGoal(Long id) {
         return goalRepository.findById(id)
@@ -95,6 +119,30 @@ public class GoalService {
     ) {
         return goalRepository.findByEmployeeId(
                 employeeId,
+                PageRequest.of(page, size)
+        );
+    }
+
+    @PreAuthorize("hasRole('MANAGER')")
+    public Page<Goal> getTeamGoals(int page, int size) {
+
+        Long managerId = SecurityUtil.userId();
+
+        // 1️ Get active cycle
+        PerformanceCycle activeCycle = cycleService.getActiveCycle();
+
+        // 2 Get direct reports
+        List<Long> reporteeIds =
+                hierarchyService.getDirectReporteeIds(managerId);
+
+        if (reporteeIds.isEmpty()) {
+            return Page.empty();
+        }
+
+        // 3️ Fetch goals
+        return goalRepository.findByEmployeeIdInAndPerformanceCycle_Id(
+                reporteeIds,
+                activeCycle.getId(),
                 PageRequest.of(page, size)
         );
     }

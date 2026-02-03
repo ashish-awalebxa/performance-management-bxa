@@ -7,6 +7,8 @@ import com.example.performance_management_system.performancecycle.repository.Per
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class PerformanceCycleService {
 
@@ -57,5 +59,10 @@ public class PerformanceCycleService {
         return repository.findByStatus(CycleStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException("No active cycle"));
     }
+
+    public List<PerformanceCycle> getAllCycles() {
+        return repository.findAll();
+    }
+
 }
 

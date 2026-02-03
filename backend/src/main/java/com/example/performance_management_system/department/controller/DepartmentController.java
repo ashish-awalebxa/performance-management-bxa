@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/departments")
 @PreAuthorize("hasRole('HR') or hasRole('ADMIN')")
@@ -26,6 +28,11 @@ public class DepartmentController {
                 request.displayName,
                 request.headId
         );
+    }
+
+    @GetMapping
+    public List<Department> list() {
+        return service.getAllDepartments();
     }
 
 }

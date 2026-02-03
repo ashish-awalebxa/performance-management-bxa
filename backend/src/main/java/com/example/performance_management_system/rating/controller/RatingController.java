@@ -1,4 +1,4 @@
-package com.example.performance_management_system.rating.controller;
+package com.example.performance_management_system.rating;
 
 import com.example.performance_management_system.rating.dto.CalibrateRatingRequest;
 import com.example.performance_management_system.rating.dto.CreateRatingRequest;

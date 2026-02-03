@@ -1,6 +1,7 @@
 package com.example.performance_management_system.keyresult.model;
 
 import com.example.performance_management_system.goal.model.Goal;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +17,7 @@ public class KeyResult {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "goal_id", nullable = false)
     private Goal goal;
 
