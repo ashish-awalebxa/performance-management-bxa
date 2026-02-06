@@ -75,11 +75,15 @@ const Sidebar = () => {
         )}
 
     {user?.role === "MANAGER" && (
-      <>
-        <NavItem to="/ratings/team" icon={Icons.Star}>
-          Ratings
-        </NavItem>
-      </>
+      <NavItem to="/ratings/team" icon={Icons.Star}>
+        Team Ratings
+      </NavItem>
+    )}
+
+    {user?.role === "EMPLOYEE" && (
+      <NavItem to="/ratings/my" icon={Icons.Star}>
+        My Rating
+      </NavItem>
     )}
 
 

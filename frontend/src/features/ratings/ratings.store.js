@@ -6,7 +6,8 @@ import {
   submitRatingApi,
   calibrateRatingApi,
   finalizeRatingApi,
-  getRatingsForCycleApi
+  getRatingsForCycleApi,
+  getMyRatingApi
 } from "./ratings.api";
 
 const initialState = {
@@ -66,3 +67,27 @@ export async function calibrateRating(id, payload) {
 export async function finalizeRating(id) {
   await finalizeRatingApi(id);
 }
+
+export async function fetchMyRating() {
+  setState({ loading: true });
+
+  try {
+    const res = await getMyRatingApi();
+    setState({
+      ratings: [res.data], // single rating
+      loading: false
+    });
+  } catch (e) {
+    setState({
+      ratings: [],
+      loading: false
+    });
+  }
+}
+
+export async function updateManagerRating(id, payload) {
+  await httpClient.put(`/api/ratings/${id}/manager`, payload);
+  fetchRatingsForActiveCycle();
+}
+
+

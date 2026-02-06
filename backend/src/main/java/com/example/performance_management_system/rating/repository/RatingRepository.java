@@ -1,5 +1,6 @@
 package com.example.performance_management_system.rating.repository;
 
+import com.example.performance_management_system.performancecycle.model.CycleStatus;
 import com.example.performance_management_system.rating.model.Rating;
 import com.example.performance_management_system.performancecycle.model.PerformanceCycle;
 import com.example.performance_management_system.rating.model.RatingStatus;
@@ -38,4 +39,22 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
 
 
     Page<Rating> findByPerformanceCycle_Id(Long cycleId, Pageable pageable);
+
+    Optional<Rating> findByEmployeeIdAndPerformanceCycle_Status(
+            Long employeeId,
+            CycleStatus status
+    );
+
+
+    Optional<Rating> findByEmployeeIdAndStatus(
+            Long employeeId,
+            RatingStatus status
+    );
+
+    List<Rating> findByManagerIdAndStatus(
+            Long managerId,
+            RatingStatus status
+    );
+
+
 }

@@ -38,11 +38,11 @@ public class HierarchyService {
      * Throws exception if manager is not allowed to act on employee
      */
     public void validateManagerAccess(Long managerId, Long employeeId) {
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new BusinessException("Employee not found"));
 
-        if (!isManagerOf(managerId, employeeId)) {
-            throw new BusinessException(
-                    "You are not the manager of this employee"
-            );
+        if (!managerId.equals(employee.getManagerId())) {
+            throw new BusinessException("You are not the manager of this employee");
         }
     }
 
@@ -51,6 +51,17 @@ public class HierarchyService {
                 .stream()
                 .map(User::getId)
                 .toList();
+    }
+
+    public Long getManagerId(Long employeeId) {
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new BusinessException("Employee not found"));
+
+        if (employee.getManagerId() == null) {
+            throw new BusinessException("Employee has no assigned manager");
+        }
+
+        return employee.getManagerId();
     }
 
 }

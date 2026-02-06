@@ -9,7 +9,7 @@ const FinalRatingsPage = () => {
 
   useEffect(() => {
     const unsub = ratingsStore.subscribe(setState);
-    fetchRatings();
+    fetchRatingsForActiveCycle();
     return unsub;
   }, []);
 
