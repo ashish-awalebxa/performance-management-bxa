@@ -19,6 +19,7 @@ import FinalRatingsPage from "../features/ratings/pages/FinalRatingsPage";
 import MyReviewPage from "../features/reviews/pages/MyReviewPage"
 import TeamReviewsPage from "../features/reviews/pages/TeamReviewsPage"
 import TeamRatingsPage from "../features/ratings/pages/TeamRatingsPage"
+import MyRatingPage from "../features/ratings/pages/MyRatingPage"
 
 const AppRoutes = () => {
   return (
@@ -60,7 +61,7 @@ const AppRoutes = () => {
                path="/ratings/finalize"
                element={<FinalRatingsPage />}
              />
-             <Route path="/ratings/my" element={<RequireRole roles={["EMPLOYEE"]}><TeamReviewsPage /></RequireRole>}/>
+             <Route path="/ratings/my" element={<RequireRole roles={["EMPLOYEE"]}><MyRatingPage /></RequireRole>}/>
 
 
 

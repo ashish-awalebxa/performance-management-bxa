@@ -3,7 +3,7 @@ import httpClient from "../../services/httpClient";
 export const createRatingApi = (payload) =>
   httpClient.post("/api/ratings", payload);
 
-export const getMyRatingApi = () =>
+export const fetchMyRatingApi = () =>
     httpClient.get("/api/ratings/my");
 
 export const submitRatingApi = (id) =>

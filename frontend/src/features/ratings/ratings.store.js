@@ -7,7 +7,7 @@ import {
   calibrateRatingApi,
   finalizeRatingApi,
   getRatingsForCycleApi,
-  getMyRatingApi
+  fetchMyRatingApi
 } from "./ratings.api";
 
 const initialState = {
@@ -72,7 +72,7 @@ export async function fetchMyRating() {
   setState({ loading: true });
 
   try {
-    const res = await getMyRatingApi();
+    const res = await fetchMyRatingApi();
     setState({
       ratings: [res.data], // single rating
       loading: false
