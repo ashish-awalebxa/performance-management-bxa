@@ -60,6 +60,8 @@ const AppRoutes = () => {
                path="/ratings/finalize"
                element={<FinalRatingsPage />}
              />
+             <Route path="/ratings/my" element={<RequireRole roles={["EMPLOYEE"]}><TeamReviewsPage /></RequireRole>}/>
+
 
 
 

@@ -3,6 +3,7 @@ package com.example.performance_management_system.rating.controller;
 import com.example.performance_management_system.config.security.SecurityUtil;
 import com.example.performance_management_system.rating.dto.CalibrateRatingRequest;
 import com.example.performance_management_system.rating.dto.CreateRatingRequest;
+import com.example.performance_management_system.rating.dto.UpdateManagerRatingRequest;
 import com.example.performance_management_system.rating.model.Rating;
 import com.example.performance_management_system.rating.service.RatingService;
 import org.springframework.data.domain.Page;
@@ -78,6 +79,22 @@ public class RatingController {
     ) {
         return service.getRatingsForCycle(cycleId, page, size);
     }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public Rating getMyRating() {
+        return service.getMyFinalRating(SecurityUtil.userId());
+    }
+
+    @PutMapping("/{id}/manager")
+    @PreAuthorize("hasRole('MANAGER')")
+    public Rating updateManagerRating(
+            @PathVariable Long id,
+            @RequestBody UpdateManagerRatingRequest req
+    ) {
+        return service.updateByManager(id, Double.valueOf(req.score), req.justification);
+    }
+
 
 
 
