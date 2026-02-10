@@ -30,6 +30,20 @@ public class DepartmentController {
         );
     }
 
+    @PutMapping("/{id}")
+    public Department update(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateDepartmentRequest request
+    ) {
+        return service.updateDepartment(id, request.displayName, request.headId);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deactivate(@PathVariable Long id) {
+        service.deactivateDepartment(id);
+    }
+
+
     @GetMapping
     public List<Department> list() {
         return service.getAllDepartments();

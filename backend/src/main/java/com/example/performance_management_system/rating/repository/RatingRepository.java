@@ -39,6 +39,11 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
 
 
     Page<Rating> findByPerformanceCycle_Id(Long cycleId, Pageable pageable);
+    Page<Rating> findByManagerIdAndPerformanceCycle_Id(
+            Long managerId,
+            Long cycleId,
+            Pageable pageable
+    );
 
     Optional<Rating> findByEmployeeIdAndPerformanceCycle_Status(
             Long employeeId,

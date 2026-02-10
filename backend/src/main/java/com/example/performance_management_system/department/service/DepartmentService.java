@@ -1,9 +1,12 @@
 package com.example.performance_management_system.department.service;
 
 import com.example.performance_management_system.common.enums.DepartmentType;
+import com.example.performance_management_system.common.error.ErrorCode;
+import com.example.performance_management_system.common.exception.BusinessException;
 import com.example.performance_management_system.department.dto.CreateDepartmentRequest;
 import com.example.performance_management_system.department.model.Department;
 import com.example.performance_management_system.department.repository.DepartmentRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,10 +40,40 @@ public class DepartmentService {
                 displayName != null ? displayName : type.name()
         );
         dept.setHeadId(headId);
+        dept.setActive(true);
 
         // 🔥 ALWAYS save (create OR update)
         return repository.save(dept);
     }
+
+    @Transactional
+    public Department updateDepartment(Long id, String displayName, Long headId) {
+        Department department = repository.findById(id)
+                .orElseThrow(() -> new BusinessException(
+                        HttpStatus.NOT_FOUND,
+                        ErrorCode.SYSTEM_ERROR,
+                        "Department not found"
+                ));
+
+        department.setDisplayName(displayName != null ? displayName : department.getType().name());
+        department.setHeadId(headId);
+
+        return repository.save(department);
+    }
+
+    @Transactional
+    public void deactivateDepartment(Long id) {
+        Department department = repository.findById(id)
+                .orElseThrow(() -> new BusinessException(
+                        HttpStatus.NOT_FOUND,
+                        ErrorCode.SYSTEM_ERROR,
+                        "Department not found"
+                ));
+
+        department.setActive(false);
+        repository.save(department);
+    }
+
 
     public List<Department> getAllDepartments() {
         return repository.findAll();

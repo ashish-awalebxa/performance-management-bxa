@@ -61,6 +61,9 @@ public class RatingService {
 
         // 🔥 enforce hierarchy consistency
         Long managerId = hierarchyService.getManagerId(req.employeeId);
+        if ("MANAGER".equals(SecurityUtil.role())) {
+            hierarchyService.validateManagerAccess(SecurityUtil.userId(), req.employeeId);
+        }
         rating.setManagerId(managerId);
 
         rating.setScore(req.score);
@@ -155,6 +158,13 @@ public class RatingService {
             int page,
             int size
     ) {
+        if ("MANAGER".equals(SecurityUtil.role())) {
+            return repository.findByManagerIdAndPerformanceCycle_Id(
+                    SecurityUtil.userId(),
+                    cycleId,
+                    PageRequest.of(page, size)
+            );
+        }
         return repository.findByPerformanceCycle_Id(
                 cycleId,
                 PageRequest.of(page, size)

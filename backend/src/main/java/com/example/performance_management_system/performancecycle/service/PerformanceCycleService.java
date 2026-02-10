@@ -3,6 +3,8 @@ package com.example.performance_management_system.performancecycle.service;
 import com.example.performance_management_system.common.error.ErrorCode;
 import com.example.performance_management_system.common.exception.BusinessException;
 import com.example.performance_management_system.performancecycle.model.CycleStatus;
+import com.example.performance_management_system.reviewcycle.model.ReviewCycleStatus;
+import com.example.performance_management_system.reviewcycle.repository.ReviewCycleRepository;
 import com.example.performance_management_system.performancecycle.model.PerformanceCycle;
 import com.example.performance_management_system.performancecycle.repository.PerformanceCycleRepository;
 import org.springframework.http.HttpStatus;
@@ -15,11 +17,15 @@ import java.util.List;
 public class PerformanceCycleService {
 
     private final PerformanceCycleRepository repository;
+    private final ReviewCycleRepository reviewCycleRepository;
 
-    public PerformanceCycleService(PerformanceCycleRepository repository) {
+    public PerformanceCycleService(
+            PerformanceCycleRepository repository,
+            ReviewCycleRepository reviewCycleRepository
+    ) {
         this.repository = repository;
+        this.reviewCycleRepository = reviewCycleRepository;
     }
-
     @Transactional
     public PerformanceCycle createCycle(PerformanceCycle cycle) {
 
@@ -67,6 +73,16 @@ public class PerformanceCycleService {
                         ErrorCode.SYSTEM_ERROR,
                         "Performance cycle not found"
                 ));
+        if (reviewCycleRepository.existsByStatusAndPerformanceCycle_Id(
+                ReviewCycleStatus.ACTIVE,
+                cycleId
+        )) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    ErrorCode.VALIDATION_FAILED,
+                    "Cannot close performance cycle while a review cycle is active"
+            );
+        }
 
         cycle.close();
         return repository.save(cycle);
