@@ -1,13 +1,16 @@
 import {
   getMyGoalsApi,
   createGoalApi,
+  updateGoalApi,
+  deleteGoalApi,
   submitGoalApi,
   approveGoalApi,
   rejectGoalApi,
-  getTeamGoalsApi,   // API function
+  getTeamGoalsApi,
   updateKeyResultProgressApi
 } from "./goals.api";
 
+const PAGE_SIZE = 25;
 
 const initialState = {
   goals: [],
@@ -18,112 +21,205 @@ const initialState = {
   error: null
 };
 
-
 let state = { ...initialState };
 let listeners = [];
+let myGoalsRequestId = 0;
+let teamGoalsRequestId = 0;
 
 export const goalsStore = {
   getState: () => state,
   subscribe(listener) {
     listeners.push(listener);
     return () => {
-      listeners = listeners.filter(l => l !== listener);
+      listeners = listeners.filter((l) => l !== listener);
     };
   }
 };
 
 function setState(newState) {
   state = { ...state, ...newState };
-  listeners.forEach(l => l(state));
+  listeners.forEach((l) => l(state));
+}
+
+function normalizePagedResponse(response) {
+  const data = response?.data ?? {};
+  return {
+    content: Array.isArray(data.content) ? data.content : [],
+    page: Number.isInteger(data.number) ? data.number : 0,
+    totalPages: Number.isInteger(data.totalPages) ? data.totalPages : 0
+  };
+}
+
+function getErrorMessage(error, fallback) {
+  return error?.response?.data?.message || fallback;
 }
 
 export async function fetchMyGoals(page = 0) {
+  const requestId = ++myGoalsRequestId;
   try {
-    setState({ loading: true });
+    setState({ loading: true, error: null });
+    const res = await getMyGoalsApi(page, PAGE_SIZE);
 
-    const res = await getMyGoalsApi(page);
+    if (requestId !== myGoalsRequestId) {
+      return;
+    }
 
-    console.log("Goals API response:", res.data); //  ADD THIS
-
+    const normalized = normalizePagedResponse(res);
     setState({
-      goals: res.data.content || [],   //  IMPORTANT
-      page: res.data.number,
-      totalPages: res.data.totalPages,
+      goals: normalized.content,
+      page: normalized.page,
+      totalPages: normalized.totalPages,
       loading: false
     });
   } catch (e) {
-    console.error("Fetch goals failed", e);
+    if (requestId !== myGoalsRequestId) {
+      return;
+    }
+
     setState({
       goals: [],
-      loading: false
+      loading: false,
+      error: getErrorMessage(e, "Unable to load goals right now.")
     });
   }
 }
 
 export async function createGoal(payload) {
-  await createGoalApi(payload);
-  fetchMyGoals();
+  try {
+    setState({ error: null });
+    await createGoalApi(payload);
+    await fetchMyGoals(0);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to create goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
+}
+
+export async function updateGoal(id, payload) {
+  try {
+    setState({ error: null });
+    await updateGoalApi(id, payload);
+    await fetchMyGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to update goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
+}
+
+export async function deleteGoal(id) {
+  try {
+    setState({ error: null });
+    await deleteGoalApi(id);
+    await fetchMyGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to delete goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
 }
 
 export async function submitGoal(id) {
-  await submitGoalApi(id);
-  fetchMyGoals();
+  try {
+    setState({ error: null });
+    await submitGoalApi(id);
+    await fetchMyGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to submit goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
 }
 
 export async function approveGoal(id) {
-  await approveGoalApi(id);
-  fetchTeamGoals();
+  try {
+    setState({ error: null });
+    await approveGoalApi(id);
+    await fetchTeamGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to approve goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
 }
 
-
 export async function rejectGoal(id, reason) {
-  await rejectGoalApi(id, reason);
-  fetchTeamGoals(); // refresh manager view
+  try {
+    setState({ error: null });
+    await rejectGoalApi(id, reason);
+    await fetchTeamGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to reject goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
 }
 
 export async function fetchTeamGoals(page = 0) {
+  const requestId = ++teamGoalsRequestId;
   try {
-    setState({ loading: true });
-    const res = await getTeamGoalsApi(page);
+    setState({ loading: true, error: null });
+    const res = await getTeamGoalsApi(page, PAGE_SIZE);
+
+    if (requestId !== teamGoalsRequestId) {
+      return;
+    }
+
+    const normalized = normalizePagedResponse(res);
     setState({
-      teamGoals: res.data.content || [],
-      page: res.data.number,
-      totalPages: res.data.totalPages,
+      teamGoals: normalized.content,
+      page: normalized.page,
+      totalPages: normalized.totalPages,
       loading: false
     });
-  } catch {
-    setState({ goals: [], loading: false });
+  } catch (e) {
+    if (requestId !== teamGoalsRequestId) {
+      return;
+    }
+
+    setState({
+      teamGoals: [],
+      loading: false,
+      error: getErrorMessage(e, "Unable to load team goals right now.")
+    });
   }
+}
+
+function updateKeyResultInGoals(goals, keyResultId, value) {
+  if (!Array.isArray(goals)) {
+    return [];
+  }
+
+  return goals.map((goal) => ({
+    ...goal,
+    keyResults: Array.isArray(goal.keyResults)
+      ? goal.keyResults.map((kr) =>
+          kr.id === keyResultId ? { ...kr, currentValue: value } : kr
+        )
+      : []
+  }));
 }
 
 export async function updateKeyResultProgress(keyResultId, value) {
   try {
+    setState({ error: null });
     await updateKeyResultProgressApi(keyResultId, value);
 
-    // 🔥 Optimistic update in store
     setState({
-      myGoals: state.myGoals.map(goal => ({
-        ...goal,
-        keyResults: goal.keyResults.map(kr =>
-          kr.id === keyResultId
-            ? { ...kr, currentValue: value }
-            : kr
-        )
-      })),
-      teamGoals: state.teamGoals.map(goal => ({
-        ...goal,
-        keyResults: goal.keyResults.map(kr =>
-          kr.id === keyResultId
-            ? { ...kr, currentValue: value }
-            : kr
-        )
-      }))
+      goals: updateKeyResultInGoals(state.goals, keyResultId, value),
+      teamGoals: updateKeyResultInGoals(state.teamGoals, keyResultId, value)
     });
+    return { ok: true };
   } catch (e) {
-    alert("Failed to update progress");
+    const message = getErrorMessage(e, "Failed to update progress");
+    setState({ error: message });
+    return { ok: false, message };
   }
 }
-
-
-
-
