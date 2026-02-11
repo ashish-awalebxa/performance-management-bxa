@@ -11,6 +11,24 @@ const PerformanceCycleTable = ({ cycles }) => {
 
   const isHR = authState.user?.role === "HR" || authState.user?.role === "ADMIN";
 
+  const handleStart = async (id) => {
+    try {
+      await startCycle(id);
+      alert("Performance cycle started.");
+    } catch (e) {
+      alert(e?.response?.data?.message || "Unable to start cycle.");
+    }
+  };
+
+  const handleClose = async (id) => {
+    try {
+      await closeCycle(id);
+      alert("Performance cycle closed.");
+    } catch (e) {
+      alert(e?.response?.data?.message || "Unable to close cycle.");
+    }
+  };
+
   if (!cycles || cycles.length === 0) {
     return (
       <div className="bg-white p-8 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
@@ -62,7 +80,7 @@ const PerformanceCycleTable = ({ cycles }) => {
                 <td className="px-6 py-4 text-right">
                   {isHR && c.status === "DRAFT" && (
                     <button
-                      onClick={() => startCycle(c.id)}
+                      onClick={() => handleStart(c.id)}
                       className="text-xs font-medium px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition shadow-sm"
                     >
                       Start Cycle
@@ -70,7 +88,7 @@ const PerformanceCycleTable = ({ cycles }) => {
                   )}
                   {isHR && c.status === "ACTIVE" && (
                     <button
-                      onClick={() => closeCycle(c.id)}
+                      onClick={() => handleClose(c.id)}
                       className="text-xs font-medium px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded hover:bg-slate-50 transition"
                     >
                       Close Cycle

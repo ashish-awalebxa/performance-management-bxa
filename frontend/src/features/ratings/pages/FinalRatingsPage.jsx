@@ -16,6 +16,8 @@ const FinalRatingsPage = () => {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Final Ratings</h2>
+      {state.error ? <p className="text-red-600">{state.error}</p> : null}
+      {state.loading ? <p className="text-slate-500">Loading ratings...</p> : null}
       {state.ratings.map(r => (
         <RatingCard key={r.id} rating={r} role={role} />
       ))}

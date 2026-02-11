@@ -1,7 +1,7 @@
 import httpClient from "../../services/httpClient";
 
-export const getDepartmentsApi = () => {
-  return httpClient.get("/api/departments");
+export const getDepartmentsApi = (params = {}) => {
+  return httpClient.get("/api/departments", { params });
 };
 
 export const createDepartmentApi = (payload) => {

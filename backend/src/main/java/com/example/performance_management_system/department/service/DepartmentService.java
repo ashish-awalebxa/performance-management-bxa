@@ -6,10 +6,11 @@ import com.example.performance_management_system.common.exception.BusinessExcept
 import com.example.performance_management_system.department.model.Department;
 import com.example.performance_management_system.department.repository.DepartmentRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
 @Service
 public class DepartmentService {
@@ -73,7 +74,7 @@ public class DepartmentService {
         repository.save(department);
     }
 
-    public List<Department> getAllDepartments() {
-        return repository.findAll();
+    public Page<Department> getAllDepartments(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 }

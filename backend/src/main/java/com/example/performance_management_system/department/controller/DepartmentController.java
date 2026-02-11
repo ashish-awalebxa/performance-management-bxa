@@ -5,10 +5,12 @@ import com.example.performance_management_system.department.dto.CreateDepartment
 import com.example.performance_management_system.department.model.Department;
 import com.example.performance_management_system.department.service.DepartmentService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/departments")
@@ -44,8 +46,11 @@ public class DepartmentController {
     }
 
     @GetMapping
-    public List<Department> list() {
-        return service.getAllDepartments();
+    public Page<Department> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        return service.getAllDepartments(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
     }
 
 }

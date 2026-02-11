@@ -7,6 +7,29 @@ const CreateRatingForm = () => {
     score: "",
     managerJustification: ""
   });
+  const [loading, setLoading] = useState(false);
+
+  const onCreate = async () => {
+    if (!form.employeeId || !form.score || !form.managerJustification) {
+      alert("Please fill all rating fields before creating.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await createRating({
+        ...form,
+        employeeId: Number(form.employeeId),
+        score: Number(form.score)
+      });
+      alert("Rating created successfully.");
+      setForm({ employeeId: "", score: "", managerJustification: "" });
+    } catch (e) {
+      alert(e?.response?.data?.message || "Failed to create rating.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="border p-4 rounded space-y-3">
@@ -41,10 +64,11 @@ const CreateRatingForm = () => {
       />
 
       <button
-        onClick={() => createRating(form)}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        disabled={loading}
+        onClick={onCreate}
+        className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-70"
       >
-        Create Rating
+        {loading ? "Creating..." : "Create Rating"}
       </button>
     </div>
   );

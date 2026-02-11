@@ -15,6 +15,15 @@ const TeamRatingsPage = () => {
     return unsub;
   }, []);
 
+  if (state.error) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Team Ratings</h1>
+        <p className="text-red-600 mt-4">{state.error}</p>
+      </div>
+    );
+  }
+
   if (!state.ratings.length) {
     return (
       <div>
@@ -34,6 +43,10 @@ const TeamRatingsPage = () => {
           className="bg-white p-5 rounded-xl border shadow-sm space-y-2"
         >
           <p className="font-semibold">
+            Employee: <span className="font-normal">{r.employeeName || "Unknown"}</span>
+          </p>
+
+          <p className="text-sm text-slate-600">
             Employee ID: <span className="font-normal">{r.employeeId}</span>
           </p>
 

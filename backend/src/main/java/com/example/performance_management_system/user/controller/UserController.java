@@ -10,6 +10,7 @@ import com.example.performance_management_system.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size
     ) {
-        return userService.getAllUsers(PageRequest.of(page, size))
+        return userService.getAllUsers(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")))
                 .map(user -> {
                     UserListResponse dto = new UserListResponse();
                     dto.id = user.getId();

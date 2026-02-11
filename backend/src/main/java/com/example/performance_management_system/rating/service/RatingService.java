@@ -10,6 +10,7 @@ import com.example.performance_management_system.rating.dto.CreateRatingRequest;
 import com.example.performance_management_system.rating.model.Rating;
 import com.example.performance_management_system.rating.model.RatingStatus;
 import com.example.performance_management_system.rating.repository.RatingRepository;
+import com.example.performance_management_system.user.repository.UserRepository;
 import com.example.performance_management_system.user.service.HierarchyService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,15 +27,18 @@ public class RatingService {
     private final RatingRepository repository;
     private final PerformanceCycleService cycleService;
     private final HierarchyService hierarchyService;
+    private final UserRepository userRepository;
 
     public RatingService(
             RatingRepository repository,
             PerformanceCycleService cycleService,
-            HierarchyService hierarchyService
+            HierarchyService hierarchyService,
+            UserRepository userRepository
     ) {
         this.repository = repository;
         this.cycleService = cycleService;
         this.hierarchyService = hierarchyService;
+        this.userRepository = userRepository;
     }
 
     /* ================= CREATE ================= */
@@ -179,10 +183,11 @@ public class RatingService {
 
         var cycle = cycleService.getActiveCycle();
 
-        return repository.findByManagerIdAndPerformanceCycle(
+        List<Rating> ratings = repository.findByManagerIdAndPerformanceCycle(
                 managerId,
                 cycle
         );
+        return enrichRatingsWithEmployeeNames(ratings);
     }
 
     @PreAuthorize("hasRole('HR')")
@@ -190,10 +195,11 @@ public class RatingService {
 
         var cycle = cycleService.getActiveCycle();
 
-        return repository.findByStatusAndPerformanceCycle(
+        List<Rating> ratings = repository.findByStatusAndPerformanceCycle(
                 RatingStatus.MANAGER_SUBMITTED,
                 cycle
         );
+        return enrichRatingsWithEmployeeNames(ratings);
     }
 
     @PreAuthorize("hasRole('LEADERSHIP')")
@@ -201,15 +207,28 @@ public class RatingService {
 
         var cycle = cycleService.getActiveCycle();
 
-        return repository.findByStatusAndPerformanceCycle(
+        List<Rating> ratings = repository.findByStatusAndPerformanceCycle(
                 RatingStatus.HR_CALIBRATED,
                 cycle
         );
+        return enrichRatingsWithEmployeeNames(ratings);
     }
 
     public List<Rating> getRatingsForActiveCycle() {
         var cycle = cycleService.getActiveCycle();
-        return repository.findByPerformanceCycle(cycle);
+
+        List<Rating> ratings;
+        String role = SecurityUtil.role();
+
+        if ("HR".equals(role)) {
+            ratings = repository.findByStatusAndPerformanceCycle(RatingStatus.MANAGER_SUBMITTED, cycle);
+        } else if ("LEADERSHIP".equals(role)) {
+            ratings = repository.findByStatusAndPerformanceCycle(RatingStatus.HR_CALIBRATED, cycle);
+        } else {
+            ratings = repository.findByPerformanceCycle(cycle);
+        }
+
+        return enrichRatingsWithEmployeeNames(ratings);
     }
 
     public Rating getMyActiveRating(Long employeeId) {
@@ -236,6 +255,31 @@ public class RatingService {
                 ErrorCode.RATING_INVALID_STATE,
                 "Rating not finalized yet"
         ));
+    }
+
+
+    private List<Rating> enrichRatingsWithEmployeeNames(List<Rating> ratings) {
+        if (ratings.isEmpty()) {
+            return ratings;
+        }
+
+        var employeeIds = ratings.stream()
+                .map(Rating::getEmployeeId)
+                .distinct()
+                .toList();
+
+        var employeeById = userRepository.findAllById(employeeIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        user -> user.getId(),
+                        user -> user.getName()
+                ));
+
+        ratings.forEach(rating -> rating.setEmployeeName(
+                employeeById.getOrDefault(rating.getEmployeeId(), "Unknown")
+        ));
+
+        return ratings;
     }
 
     /* ================= UPDATE ================= */

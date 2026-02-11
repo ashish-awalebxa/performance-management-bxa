@@ -13,9 +13,16 @@ const CreatePerformanceCycleForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await createCycle(form);
-    setLoading(false);
-    setForm({ name: "", cycleType: "", startDate: "", endDate: "" });
+    try {
+      await createCycle(form);
+      alert("Performance cycle created successfully.");
+      setForm({ name: "", cycleType: "", startDate: "", endDate: "" });
+    } catch (error) {
+      const message = error?.response?.data?.message || "Unable to create performance cycle.";
+      alert(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const labelClass = "block text-xs font-medium text-slate-700 mb-1";
@@ -23,8 +30,6 @@ const CreatePerformanceCycleForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-
-      {/* Name */}
       <div className="md:col-span-1">
         <label className={labelClass}>Cycle Name</label>
         <input
@@ -36,7 +41,6 @@ const CreatePerformanceCycleForm = () => {
         />
       </div>
 
-      {/* Type */}
       <div className="md:col-span-1">
         <label className={labelClass}>Cycle Type</label>
         <select
@@ -52,7 +56,6 @@ const CreatePerformanceCycleForm = () => {
         </select>
       </div>
 
-      {/* Dates Row */}
       <div className="md:col-span-1">
         <label className={labelClass}>Start Date</label>
         <input
@@ -75,15 +78,14 @@ const CreatePerformanceCycleForm = () => {
         />
       </div>
 
-      {/* Submit Button */}
       <div className="md:col-span-4 flex justify-end mt-2">
-         <button
-           type="submit"
-           disabled={loading}
-           className="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-sm disabled:opacity-70 flex items-center gap-2"
-         >
-           {loading ? "Creating..." : "Create Cycle"}
-         </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-sm disabled:opacity-70 flex items-center gap-2"
+        >
+          {loading ? "Creating..." : "Create Cycle"}
+        </button>
       </div>
     </form>
   );

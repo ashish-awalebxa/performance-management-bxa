@@ -18,9 +18,13 @@ const HrCalibrationPage = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">HR Calibration</h1>
 
+      {state.error ? <p className="text-red-600">{state.error}</p> : null}
+      {state.loading ? <p className="text-slate-500">Loading ratings...</p> : null}
+
       {state.ratings.map((r) => (
         <div key={r.id} className="bg-white p-4 rounded border">
-          <p>Employee: {r.employeeId}</p>
+          <p>Employee: {r.employeeName || "Unknown"}</p>
+          <p>Employee ID: {r.employeeId}</p>
           <p>Status: {r.status}</p>
           <p>Score: {r.score}</p>
 

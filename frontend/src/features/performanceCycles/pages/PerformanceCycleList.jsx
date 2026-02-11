@@ -1,24 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { performanceCyclesStore, fetchCycles } from "../performanceCycles.store";
 import CreatePerformanceCycleForm from "../components/CreatePerformanceCycleForm";
 import PerformanceCycleTable from "../components/PerformanceCycleTable";
 import { authStore } from "../../../auth/auth.store";
+import Pagination from "../../../components/common/Pagination";
+
+const PAGE_SIZE = 5;
 
 const PerformanceCycleList = () => {
   const [state, setState] = useState(performanceCyclesStore.getState());
+  const [page, setPage] = useState(0);
   const { user } = authStore.getState();
 
   useEffect(() => {
-    performanceCyclesStore.subscribe(setState);
+    const unsub = performanceCyclesStore.subscribe(setState);
     fetchCycles();
+    return unsub;
   }, []);
+
+  const sortedCycles = useMemo(() => {
+    return [...(state.cycles || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
+  }, [state.cycles]);
+
+  const totalPages = Math.ceil(sortedCycles.length / PAGE_SIZE);
+  const pagedCycles = sortedCycles.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const canManage = user?.role === "HR" || user?.role === "ADMIN";
 
   return (
     <div className="space-y-8">
-
-      {/* --- Page Header --- */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Performance Cycles</h1>
         <p className="text-sm text-slate-500 mt-1">
@@ -26,7 +36,6 @@ const PerformanceCycleList = () => {
         </p>
       </div>
 
-      {/* --- Create Section (Card) --- */}
       {canManage && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
@@ -43,14 +52,16 @@ const PerformanceCycleList = () => {
         </div>
       )}
 
-      {/* --- Table Section --- */}
       <div className="space-y-4">
         <div className="flex justify-between items-end">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
-            Cycle History ({state.cycles.length})
+            Cycle History ({sortedCycles.length})
           </h3>
         </div>
-        <PerformanceCycleTable cycles={state.cycles} />
+        <PerformanceCycleTable cycles={pagedCycles} />
+        <div className="flex justify-center">
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
       </div>
     </div>
   );

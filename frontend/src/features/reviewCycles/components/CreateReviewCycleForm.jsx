@@ -28,7 +28,7 @@ const CreateReviewCycleForm = ({ onSuccess }) => {
       });
       if (onSuccess) onSuccess();
     } catch (err) {
-      const message = err?.response?.data?.message || "Unable to create review cycle";
+      const message = err?.response?.data?.message || "Unable to create review cycle. Please create and activate a performance cycle first.";
       setError(message);
       alert(message);
     } finally {

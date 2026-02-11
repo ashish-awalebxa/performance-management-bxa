@@ -5,21 +5,39 @@ const MyReviewPage = () => {
   const [review, setReview] = useState(null);
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    getMyReviewApi().then(res => {
+  const loadReview = async () => {
+    setError("");
+    try {
+      const res = await getMyReviewApi();
       setReview(res.data);
       setComments(res.data.selfReviewComments || "");
-    });
+    } catch (e) {
+      setError(e?.response?.data?.message || "Failed to load review.");
+    }
+  };
+
+  useEffect(() => {
+    loadReview();
   }, []);
 
-  if (!review) return <p>No active review cycle.</p>;
+  if (!review) return <p>{error || "No active review cycle."}</p>;
 
   const submit = async () => {
     setLoading(true);
-    await submitSelfReviewApi(review.id, comments);
-    setLoading(false);
-    alert("Self review submitted");
+    setError("");
+    try {
+      await submitSelfReviewApi(review.id, comments);
+      alert("Self review submitted");
+      await loadReview();
+    } catch (e) {
+      const message = e?.response?.data?.message || "Failed to submit self review.";
+      setError(message);
+      alert(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,6 +46,8 @@ const MyReviewPage = () => {
 
       <div className="bg-white p-6 rounded-xl border">
         <h2 className="font-semibold mb-2">Self Review</h2>
+
+        {error ? <p className="text-sm text-red-600 mb-3">{error}</p> : null}
 
         <textarea
           rows={6}

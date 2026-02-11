@@ -8,12 +8,16 @@ const CalibrateRatingForm = ({ rating, onDone }) => {
   const [justification, setJustification] = useState("");
 
   const onCalibrate = async () => {
-    await calibrateRating(rating.id, {
-      newScore,
-      justification
-    });
-
-    if (onDone) onDone();
+    try {
+      await calibrateRating(rating.id, {
+        newScore,
+        justification
+      });
+      alert("Rating calibrated successfully.");
+      if (onDone) onDone();
+    } catch (e) {
+      alert(e?.response?.data?.message || "Unable to calibrate rating.");
+    }
   };
 
   return (

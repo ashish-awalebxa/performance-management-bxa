@@ -28,6 +28,9 @@ public class Rating {
     @Column(name = "employee_id", nullable = false)
     private Long employeeId;
 
+    @Transient
+    private String employeeName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "performance_cycle_id", nullable = false)
     private PerformanceCycle performanceCycle;
