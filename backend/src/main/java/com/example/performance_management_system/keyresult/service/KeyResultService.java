@@ -4,6 +4,7 @@ import com.example.performance_management_system.common.error.ErrorCode;
 import com.example.performance_management_system.common.exception.BusinessException;
 import com.example.performance_management_system.config.security.SecurityUtil;
 import com.example.performance_management_system.goal.model.Goal;
+import com.example.performance_management_system.goal.model.GoalStatus;
 import com.example.performance_management_system.goal.service.GoalService;
 import com.example.performance_management_system.keyresult.model.KeyResult;
 import com.example.performance_management_system.keyresult.repository.KeyResultRepository;
@@ -48,6 +49,14 @@ public class KeyResultService {
             );
         }
 
+        if (goal.getStatus() != GoalStatus.APPROVED && goal.getStatus() != GoalStatus.COMPLETED) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    ErrorCode.GOAL_INVALID_STATE,
+                    "Progress can only be updated for approved goals"
+            );
+        }
+
         // business rule
         if (value > kr.getTargetValue()) {
             throw new BusinessException(
@@ -57,7 +66,15 @@ public class KeyResultService {
             );
         }
 
-        kr.updateProgress(value);
+        try {
+            kr.updateProgress(value);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    ErrorCode.VALIDATION_FAILED,
+                    e.getMessage()
+            );
+        }
         goalService.autoCompleteGoalIfEligible(goal);
 
         return repository.save(kr);

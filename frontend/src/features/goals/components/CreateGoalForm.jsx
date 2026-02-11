@@ -51,11 +51,15 @@ const CreateGoalForm = ({ onSuccess }) => {
       }))
     };
 
-    console.log("Create Goal Payload →", payload); // 🔍 debug once
-
-    await createGoal(payload);
+    const result = await createGoal(payload);
 
     setLoading(false);
+
+    if (!result?.ok) {
+      alert(result?.message || "Unable to create goal");
+      return;
+    }
+
     setForm({
       title: "",
       description: "",

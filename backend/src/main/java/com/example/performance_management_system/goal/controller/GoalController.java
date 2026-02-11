@@ -5,12 +5,11 @@ import com.example.performance_management_system.goal.dto.CreateGoalRequest;
 import com.example.performance_management_system.goal.dto.GoalResponse;
 import com.example.performance_management_system.goal.dto.ManagerDashboardSummary;
 import com.example.performance_management_system.goal.dto.RejectGoalRequest;
-import com.example.performance_management_system.goal.model.Goal;
+import com.example.performance_management_system.goal.dto.UpdateGoalRequest;
 import com.example.performance_management_system.goal.service.GoalService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,12 +18,9 @@ public class GoalController {
 
     private final GoalService service;
 
-    // ✅ Constructor injection (ONLY what controller needs)
     public GoalController(GoalService service) {
         this.service = service;
     }
-
-    /* ================= EMPLOYEE / MANAGER ================= */
 
     @PostMapping
     @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER')")
@@ -42,13 +38,32 @@ public class GoalController {
         return service.getGoalsForEmployee(userId, page, size);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER')")
+    public GoalResponse getById(@PathVariable Long id) {
+        return service.getGoalById(id);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public GoalResponse update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateGoalRequest request
+    ) {
+        return service.updateGoal(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public void delete(@PathVariable Long id) {
+        service.deleteGoal(id);
+    }
+
     @PostMapping("/{id}/submit")
     @PreAuthorize("hasRole('EMPLOYEE')")
     public GoalResponse submit(@PathVariable Long id) {
         return service.submitGoal(id);
     }
-
-    /* ================= MANAGER ================= */
 
     @GetMapping("/team")
     @PreAuthorize("hasRole('MANAGER')")
@@ -79,7 +94,4 @@ public class GoalController {
     public ManagerDashboardSummary managerSummary() {
         return service.getManagerDashboardSummary();
     }
-
 }
-
-

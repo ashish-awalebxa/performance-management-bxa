@@ -6,6 +6,8 @@ import com.example.performance_management_system.config.security.SecurityUtil;
 import com.example.performance_management_system.goal.dto.CreateGoalRequest;
 import com.example.performance_management_system.goal.dto.GoalResponse;
 import com.example.performance_management_system.goal.dto.ManagerDashboardSummary;
+import com.example.performance_management_system.goal.dto.UpdateGoalRequest;
+import com.example.performance_management_system.goal.dto.UpsertKeyResultRequest;
 import com.example.performance_management_system.goal.model.Goal;
 import com.example.performance_management_system.goal.model.GoalStatus;
 import com.example.performance_management_system.goal.repository.GoalRepository;
@@ -21,7 +23,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class GoalService {
@@ -40,10 +44,11 @@ public class GoalService {
         this.hierarchyService = hierarchyService;
     }
 
-    /* ================= CREATE ================= */
-
     @Transactional
     public GoalResponse createGoal(CreateGoalRequest req) {
+        Long actorId = SecurityUtil.userId();
+        String actorRole = SecurityUtil.role();
+        validateCreateAccess(actorId, actorRole, req.employeeId);
 
         PerformanceCycle activeCycle = cycleService.getActiveCycle();
 
@@ -53,18 +58,16 @@ public class GoalService {
         goal.setEmployeeId(req.employeeId);
         goal.setPerformanceCycle(activeCycle);
 
-        for (var krReq : req.keyResults) {
+        req.keyResults.forEach((krReq) -> {
             KeyResult kr = new KeyResult();
             kr.setMetric(krReq.metric);
             kr.setTargetValue(krReq.targetValue);
             kr.setGoal(goal);
             goal.getKeyResults().add(kr);
-        }
+        });
 
         return toGoalResponse(goalRepository.save(goal));
     }
-
-    /* ================= EMPLOYEE ================= */
 
     public Page<GoalResponse> getGoalsForEmployee(
             Long employeeId,
@@ -77,21 +80,66 @@ public class GoalService {
         ).map(this::toGoalResponse);
     }
 
-    @Transactional
-    public GoalResponse submitGoal(Long goalId) {
-
+    public GoalResponse getGoalById(Long goalId) {
         Goal goal = findGoal(goalId);
+        validateReadAccess(goal);
+        return toGoalResponse(goal);
+    }
 
-        goal.submit();
+    @Transactional
+    public GoalResponse updateGoal(Long goalId, UpdateGoalRequest request) {
+        Goal goal = findGoal(goalId);
+        validateEmployeeOwnership(goal);
+        validateEditableStatus(goal);
+
+        goal.setTitle(request.title);
+        goal.setDescription(request.description);
+
+        Map<Long, KeyResult> existingById = new LinkedHashMap<>();
+        goal.getKeyResults().forEach((kr) -> existingById.put(kr.getId(), kr));
+
+        goal.getKeyResults().clear();
+
+        request.keyResults.forEach((krRequest) -> {
+            KeyResult keyResult = resolveOrCreateKeyResult(krRequest, existingById, goal);
+            keyResult.setMetric(krRequest.metric);
+            keyResult.setTargetValue(krRequest.targetValue);
+
+            if (keyResult.getCurrentValue() > keyResult.getTargetValue()) {
+                keyResult.setCurrentValue(keyResult.getTargetValue());
+            }
+
+            goal.getKeyResults().add(keyResult);
+        });
+
         return toGoalResponse(goalRepository.save(goal));
     }
 
-    /* ================= MANAGER ================= */
+    @Transactional
+    public void deleteGoal(Long goalId) {
+        Goal goal = findGoal(goalId);
+        validateEmployeeOwnership(goal);
+        validateEditableStatus(goal);
+        goalRepository.delete(goal);
+    }
+
+    @Transactional
+    public GoalResponse submitGoal(Long goalId) {
+        Goal goal = findGoal(goalId);
+        validateEmployeeOwnership(goal);
+
+        try {
+            goal.submit();
+        } catch (IllegalStateException e) {
+            throw goalStateException(e.getMessage());
+        }
+
+        return toGoalResponse(goalRepository.save(goal));
+    }
 
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
     public GoalResponse approveGoal(Long goalId) {
-
         Goal goal = findGoal(goalId);
 
         hierarchyService.validateManagerAccess(
@@ -99,7 +147,12 @@ public class GoalService {
                 goal.getEmployeeId()
         );
 
-        goal.approve();
+        try {
+            goal.approve();
+        } catch (IllegalStateException e) {
+            throw goalStateException(e.getMessage());
+        }
+
         autoCompleteGoalIfEligible(goal);
 
         return toGoalResponse(goalRepository.save(goal));
@@ -108,7 +161,6 @@ public class GoalService {
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
     public GoalResponse rejectGoal(Long goalId, String reason) {
-
         Goal goal = findGoal(goalId);
 
         hierarchyService.validateManagerAccess(
@@ -116,7 +168,12 @@ public class GoalService {
                 goal.getEmployeeId()
         );
 
-        goal.reject(reason);
+        try {
+            goal.reject(reason);
+        } catch (IllegalStateException e) {
+            throw goalStateException(e.getMessage());
+        }
+
         return toGoalResponse(goalRepository.save(goal));
     }
 
@@ -141,8 +198,6 @@ public class GoalService {
                 )
                 .map(this::toGoalResponse);
     }
-
-    /* ================= HELPERS ================= */
 
     private Goal findGoal(Long id) {
         return goalRepository.findById(id)
@@ -225,5 +280,94 @@ public class GoalService {
         if (allDone) {
             goal.setStatus(GoalStatus.COMPLETED);
         }
+    }
+
+    private void validateCreateAccess(Long actorId, String actorRole, Long requestedEmployeeId) {
+        if ("MANAGER".equals(actorRole)) {
+            if (!actorId.equals(requestedEmployeeId)) {
+                hierarchyService.validateManagerAccess(actorId, requestedEmployeeId);
+            }
+            return;
+        }
+
+        if (!actorId.equals(requestedEmployeeId)) {
+            throw new BusinessException(
+                    HttpStatus.FORBIDDEN,
+                    ErrorCode.ACCESS_DENIED,
+                    "Employees can only create goals for themselves"
+            );
+        }
+    }
+
+    private void validateReadAccess(Goal goal) {
+        Long actorId = SecurityUtil.userId();
+        String actorRole = SecurityUtil.role();
+
+        if (actorId.equals(goal.getEmployeeId())) {
+            return;
+        }
+
+        if ("MANAGER".equals(actorRole)) {
+            hierarchyService.validateManagerAccess(actorId, goal.getEmployeeId());
+            return;
+        }
+
+        throw new BusinessException(
+                HttpStatus.FORBIDDEN,
+                ErrorCode.ACCESS_DENIED,
+                "You are not allowed to access this goal"
+        );
+    }
+
+    private void validateEmployeeOwnership(Goal goal) {
+        if (!SecurityUtil.userId().equals(goal.getEmployeeId())) {
+            throw new BusinessException(
+                    HttpStatus.FORBIDDEN,
+                    ErrorCode.ACCESS_DENIED,
+                    "You can only modify your own goals"
+            );
+        }
+    }
+
+    private void validateEditableStatus(Goal goal) {
+        if (goal.getStatus() != GoalStatus.DRAFT && goal.getStatus() != GoalStatus.REJECTED) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    ErrorCode.GOAL_INVALID_STATE,
+                    "Only DRAFT or REJECTED goals can be edited or deleted"
+            );
+        }
+    }
+
+    private KeyResult resolveOrCreateKeyResult(
+            UpsertKeyResultRequest request,
+            Map<Long, KeyResult> existingById,
+            Goal goal
+    ) {
+        if (request.id == null) {
+            KeyResult fresh = new KeyResult();
+            fresh.setGoal(goal);
+            return fresh;
+        }
+
+        KeyResult existing = existingById.remove(request.id);
+        if (existing == null) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    ErrorCode.VALIDATION_FAILED,
+                    "Key result id " + request.id + " does not belong to this goal"
+            );
+        }
+
+        existing.setGoal(goal);
+        return existing;
+    }
+
+    private BusinessException goalStateException(String message) {
+        return new BusinessException(
+                HttpStatus.CONFLICT,
+                ErrorCode.GOAL_INVALID_STATE,
+                message
+        );
     }
 }

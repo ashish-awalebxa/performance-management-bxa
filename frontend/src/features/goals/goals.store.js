@@ -1,6 +1,8 @@
 import {
   getMyGoalsApi,
   createGoalApi,
+  updateGoalApi,
+  deleteGoalApi,
   submitGoalApi,
   approveGoalApi,
   rejectGoalApi,
@@ -79,8 +81,42 @@ export async function fetchMyGoals(page = 0) {
 }
 
 export async function createGoal(payload) {
-  await createGoalApi(payload);
-  fetchMyGoals();
+  try {
+    setState({ error: null });
+    await createGoalApi(payload);
+    await fetchMyGoals(0);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to create goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
+}
+
+export async function updateGoal(id, payload) {
+  try {
+    setState({ error: null });
+    await updateGoalApi(id, payload);
+    await fetchMyGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to update goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
+}
+
+export async function deleteGoal(id) {
+  try {
+    setState({ error: null });
+    await deleteGoalApi(id);
+    await fetchMyGoals(state.page);
+    return { ok: true };
+  } catch (e) {
+    const message = getErrorMessage(e, "Unable to delete goal.");
+    setState({ error: message });
+    return { ok: false, message };
+  }
 }
 
 export async function submitGoal(id) {
@@ -126,6 +162,15 @@ export async function fetchTeamGoals(page = 0) {
       error: e?.response?.data?.message || "Unable to load team goals right now."
     });
   }
+
+  return goals.map((goal) => ({
+    ...goal,
+    keyResults: Array.isArray(goal.keyResults)
+      ? goal.keyResults.map((kr) =>
+          kr.id === keyResultId ? { ...kr, currentValue: value } : kr
+        )
+      : []
+  }));
 }
 
 function updateKeyResultInGoals(goals, keyResultId, value) {
@@ -145,6 +190,7 @@ function updateKeyResultInGoals(goals, keyResultId, value) {
 
 export async function updateKeyResultProgress(keyResultId, value) {
   try {
+    setState({ error: null });
     await updateKeyResultProgressApi(keyResultId, value);
 
     setState({
