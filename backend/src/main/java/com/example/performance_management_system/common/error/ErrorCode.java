@@ -8,6 +8,7 @@ public enum ErrorCode {
 
     // VALIDATION
     VALIDATION_FAILED,
+    INVALID_INPUT,
 
     // USER
     USER_NOT_FOUND,
@@ -30,5 +31,6 @@ public enum ErrorCode {
 
     // SYSTEM
     DATA_INTEGRITY_VIOLATION,
+    RESOURCE_NOT_FOUND,
     SYSTEM_ERROR
 }

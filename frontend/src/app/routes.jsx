@@ -21,6 +21,7 @@ import TeamReviewsPage from "../features/reviews/pages/TeamReviewsPage";
 import TeamRatingsPage from "../features/ratings/pages/TeamRatingsPage";
 import MyRatingPage from "../features/ratings/pages/MyRatingPage";
 import ProfilePage from "../auth/pages/profile";
+import ContinuousFeedbackPage from "../features/feedback/pages/ContinuousFeedbackPage";
 
 const AppRoutes = () => {
   return (
@@ -45,6 +46,7 @@ const AppRoutes = () => {
             <Route path="/ratings/finalize" element={<RequireRole roles={["HR", "LEADERSHIP"]}><FinalRatingsPage /></RequireRole>} />
 
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/feedback" element={<ContinuousFeedbackPage />} />
             <Route path="/users" element={<UserList />} />
 
             <Route element={<RoleGuard allowedRoles={["HR", "ADMIN"]} />}>

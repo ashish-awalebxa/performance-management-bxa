@@ -26,6 +26,7 @@ const Icons = {
   Goal: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Review: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
   Star: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.01 6.186a1 1 0 00.95.69h6.505c.969 0 1.371 1.24.588 1.81l-5.263 3.823a1 1 0 00-.364 1.118l2.01 6.186c.3.922-.755 1.688-1.539 1.118l-5.262-3.822a1 1 0 00-1.176 0L6.148 22.93c-.783.57-1.838-.196-1.539-1.118l2.01-6.186a1 1 0 00-.364-1.118L.992 11.613c-.783-.57-.38-1.81.588-1.81h6.505a1 1 0 00.95-.69l2.014-6.186z" /></svg>,
+  Feedback: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.8L3 20l1.19-3.57A7.31 7.31 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
 };
 
 const Sidebar = () => {
@@ -51,6 +52,7 @@ const Sidebar = () => {
             <NavItem to="/departments" icon={Icons.Dept}>Departments</NavItem>
             <NavItem to="/performance-cycles" icon={Icons.Cycle}>Performance Cycles</NavItem>
             <NavItem to="/review-cycles" icon={Icons.Review}>Review Cycles</NavItem>
+            <NavItem to="/feedback" icon={Icons.Feedback}>Feedback</NavItem>
           </>
         )}
 
@@ -59,6 +61,7 @@ const Sidebar = () => {
              <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-6 mb-2">Performance</p>
              <NavItem to="/goals" icon={Icons.Goal} end={true}>My Goals</NavItem>
              <NavItem to="/reviews/my">My Review</NavItem>
+             <NavItem to="/feedback" icon={Icons.Feedback}>Feedback</NavItem>
            </>
         )}
 

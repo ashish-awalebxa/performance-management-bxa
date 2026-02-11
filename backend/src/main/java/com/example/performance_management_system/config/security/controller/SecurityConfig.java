@@ -53,6 +53,10 @@ public class SecurityConfig {
                         // 🔐 Goals
                         .requestMatchers("/api/goals/**")
                         .hasAnyRole("EMPLOYEE", "MANAGER")
+
+                        // 🔐 Continuous feedback
+                        .requestMatchers("/api/feedback/**")
+                        .hasAnyRole("EMPLOYEE", "MANAGER", "HR")
                         // 🔓 public auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
 
