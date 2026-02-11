@@ -14,6 +14,7 @@ const initialState = {
   ratings: [],
   loading: false,
   error: null
+
 };
 
 let state = { ...initialState };

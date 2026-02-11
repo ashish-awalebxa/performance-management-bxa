@@ -136,8 +136,10 @@ export async function rejectGoal(id, reason) {
 
 export async function fetchTeamGoals(page = 0) {
   const requestId = ++teamGoalsRequestId;
+
   try {
     setState({ loading: true, error: null });
+
     const res = await getTeamGoalsApi(page, PAGE_SIZE);
 
     if (requestId !== teamGoalsRequestId) {
@@ -145,13 +147,16 @@ export async function fetchTeamGoals(page = 0) {
     }
 
     const normalized = normalizePagedResponse(res);
+
     setState({
       teamGoals: normalized.content,
       page: normalized.page,
       totalPages: normalized.totalPages,
       loading: false
     });
+
   } catch (e) {
+
     if (requestId !== teamGoalsRequestId) {
       return;
     }
@@ -159,19 +164,12 @@ export async function fetchTeamGoals(page = 0) {
     setState({
       teamGoals: [],
       loading: false,
-      error: e?.response?.data?.message || "Unable to load team goals right now."
+      error: e?.response?.data?.message ||
+             "Unable to load team goals right now."
     });
   }
-
-  return goals.map((goal) => ({
-    ...goal,
-    keyResults: Array.isArray(goal.keyResults)
-      ? goal.keyResults.map((kr) =>
-          kr.id === keyResultId ? { ...kr, currentValue: value } : kr
-        )
-      : []
-  }));
 }
+
 
 function updateKeyResultInGoals(goals, keyResultId, value) {
   if (!Array.isArray(goals)) {

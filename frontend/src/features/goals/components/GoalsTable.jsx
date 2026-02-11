@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   submitGoal,
   approveGoal,
@@ -15,6 +15,10 @@ const GoalsTable = ({ goals }) => {
   const { user } = authStore.getState();
   const role = user?.role;
 
+  const [editGoalId, setEditGoalId] = useState(null);
+  const [form, setForm] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
   if (!Array.isArray(goals) || goals.length === 0) {
     return (
       <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
@@ -23,12 +27,14 @@ const GoalsTable = ({ goals }) => {
     );
   }
 
+  /* ================= EDIT HANDLERS ================= */
+
   const startEditing = (goal) => {
     setEditGoalId(goal.id);
     setForm({
-      title: goal?.title || "",
-      description: goal?.description || "",
-      keyResults: (goal?.keyResults || []).map((kr) => ({
+      title: goal.title || "",
+      description: goal.description || "",
+      keyResults: (goal.keyResults || []).map((kr) => ({
         id: kr.id,
         metric: kr.metric || "",
         targetValue: String(kr.targetValue ?? "")
@@ -39,29 +45,6 @@ const GoalsTable = ({ goals }) => {
   const cancelEdit = () => {
     setEditGoalId(null);
     setForm(null);
-  };
-
-  const onKrChange = (index, field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      keyResults: prev.keyResults.map((kr, idx) =>
-        idx === index ? { ...kr, [field]: value } : kr
-      )
-    }));
-  };
-
-  const addKr = () => {
-    setForm((prev) => ({
-      ...prev,
-      keyResults: [...prev.keyResults, { metric: "", targetValue: "" }]
-    }));
-  };
-
-  const removeKr = (index) => {
-    setForm((prev) => ({
-      ...prev,
-      keyResults: prev.keyResults.filter((_, idx) => idx !== index)
-    }));
   };
 
   const handleUpdate = async (goalId) => {
@@ -80,7 +63,11 @@ const GoalsTable = ({ goals }) => {
       }))
     };
 
-    if (payload.keyResults.some((kr) => !kr.metric || !kr.targetValue || kr.targetValue <= 0)) {
+    if (
+      payload.keyResults.some(
+        (kr) => !kr.metric || !kr.targetValue || kr.targetValue <= 0
+      )
+    ) {
       alert("Each key result needs a metric and a target greater than 0.");
       return;
     }
@@ -89,8 +76,8 @@ const GoalsTable = ({ goals }) => {
     const result = await updateGoal(goalId, payload);
     setSubmitting(false);
 
-    if (!result.ok) {
-      alert(result.message || "Failed to update goal");
+    if (!result?.ok) {
+      alert(result?.message || "Failed to update goal");
       return;
     }
 
@@ -98,173 +85,139 @@ const GoalsTable = ({ goals }) => {
   };
 
   const handleDelete = async (goalId) => {
-    if (!window.confirm("Delete this goal? This action cannot be undone.")) {
-      return;
-    }
+    if (!window.confirm("Delete this goal?")) return;
 
     const result = await deleteGoal(goalId);
-    if (!result.ok) {
-      alert(result.message || "Failed to delete goal");
+    if (!result?.ok) {
+      alert(result?.message || "Failed to delete goal");
     }
   };
 
   const handleSubmitGoal = async (goalId) => {
     const result = await submitGoal(goalId);
-    if (!result.ok) {
-      alert(result.message || "Failed to submit goal");
+    if (!result?.ok) {
+      alert(result?.message || "Failed to submit goal");
     }
   };
 
   const handleApprove = async (goalId) => {
     const result = await approveGoal(goalId);
-    if (!result.ok) {
-      alert(result.message || "Failed to approve goal");
+    if (!result?.ok) {
+      alert(result?.message || "Failed to approve goal");
     }
   };
 
   const handleReject = async (goalId) => {
     const reason = prompt("Rejection reason:");
-    if (!reason) {
-      return;
-    }
+    if (!reason) return;
 
     const result = await rejectGoal(goalId, reason);
-    if (!result.ok) {
-      alert(result.message || "Failed to reject goal");
+    if (!result?.ok) {
+      alert(result?.message || "Failed to reject goal");
     }
   };
 
+  /* ================= RENDER ================= */
+
   return (
     <div className="grid grid-cols-1 gap-4">
-      {goals.map((goal, index) => (
-        <div
-          key={goal?.id ?? `${goal?.title || "goal"}-${index}`}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-        >
-          {/* -------- GOAL HEADER -------- */}
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-lg font-bold text-slate-800">
-                {goal?.title || "Untitled goal"}
-              </h3>
-              {goal?.description && (
-                <p className="text-slate-500 text-sm mt-1">
-                  {goal?.description}
-                </p>
-              )}
+      {goals.map((goal) => {
+        const isEditing = editGoalId === goal.id;
+        const isEditable =
+          role === "EMPLOYEE" &&
+          EDITABLE_STATUSES.has(goal.status);
+
+        return (
+          <div
+            key={goal.id}
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+          >
+            {/* HEADER */}
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  {goal.title}
+                </h3>
+                {goal.description && (
+                  <p className="text-slate-500 text-sm mt-1">
+                    {goal.description}
+                  </p>
+                )}
+              </div>
+
+              <span
+                className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase
+                  ${
+                    goal.status === "COMPLETED"
+                      ? "bg-green-100 text-green-700"
+                      : goal.status === "REJECTED"
+                      ? "bg-red-100 text-red-700"
+                      : goal.status === "SUBMITTED"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+              >
+                {goal.status}
+              </span>
             </div>
 
-            <span
-              className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase
-                ${
-                  goal?.status === "COMPLETED"
-                    ? "bg-green-100 text-green-700"
-                    : goal?.status === "REJECTED"
-                    ? "bg-red-100 text-red-700"
-                    : goal?.status === "SUBMITTED"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-blue-100 text-blue-700"
-                }`}
-            >
-              {goal?.status || "UNKNOWN"}
-            </span>
-          </div>
-
-          {/* -------- KEY RESULTS -------- */}
-          <div className="space-y-3">
-            {Array.isArray(goal?.keyResults) &&
-              goal.keyResults.map((kr) => (
+            {/* KEY RESULTS */}
+            <div className="space-y-3">
+              {goal.keyResults?.map((kr) => (
                 <KeyResultProgress key={kr.id} kr={kr} />
               ))}
-          </div>
+            </div>
 
-          {/* -------- ACTIONS -------- */}
-          <div className="flex gap-3 mt-4">
-            {/* EMPLOYEE: Submit */}
-            {role === "EMPLOYEE" &&
-              goal?.status === "DRAFT" && (
+            {/* ACTIONS */}
+            <div className="flex gap-3 mt-4 flex-wrap">
+
+              {/* EMPLOYEE: Submit */}
+              {role === "EMPLOYEE" && goal.status === "DRAFT" && (
                 <button
-                  onClick={() => submitGoal(goal?.id)}
+                  onClick={() => handleSubmitGoal(goal.id)}
                   className="px-4 py-1.5 text-sm font-semibold rounded bg-blue-600 text-white hover:bg-blue-700"
                 >
-                  + Add key result
+                  Submit
                 </button>
+              )}
 
-            {/* MANAGER: Approve / Reject */}
-            {role === "MANAGER" &&
-              goal?.status === "SUBMITTED" && (
+              {/* EMPLOYEE: Edit/Delete */}
+              {isEditable && (
                 <>
                   <button
-                    onClick={() => approveGoal(goal?.id)}
-                    className="px-4 py-1.5 text-sm font-semibold rounded bg-green-600 text-white hover:bg-green-700"
+                    onClick={() => startEditing(goal)}
+                    className="px-4 py-1.5 text-sm font-semibold rounded bg-slate-700 text-white hover:bg-slate-800"
                   >
-                    Save Update
+                    Update
                   </button>
                   <button
-                    onClick={() => {
-                      const reason = prompt("Rejection reason:");
-                      if (reason) rejectGoal(goal?.id, reason);
-                    }}
+                    onClick={() => handleDelete(goal.id)}
                     className="px-4 py-1.5 text-sm font-semibold rounded bg-red-600 text-white hover:bg-red-700"
                   >
-                    Cancel
+                    Delete
                   </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {Array.isArray(latestGoal?.keyResults) &&
-                    latestGoal.keyResults.map((kr) => <KeyResultProgress key={kr.id} kr={kr} />)}
-                </div>
+                </>
+              )}
 
-                <div className="flex gap-2 mt-4 flex-wrap">
-                  {role === "EMPLOYEE" && latestGoal?.status === "DRAFT" && (
-                    <button
-                      onClick={() => handleSubmitGoal(latestGoal?.id)}
-                      className="px-4 py-1.5 text-sm font-semibold rounded bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Submit
-                    </button>
-                  )}
+              {/* MANAGER: Approve / Reject */}
+              {role === "MANAGER" && goal.status === "SUBMITTED" && (
+                <>
+                  <button
+                    onClick={() => handleApprove(goal.id)}
+                    className="px-4 py-1.5 text-sm font-semibold rounded bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Approve
+                  </button>
 
-                  {isEditable && (
-                    <>
-                      <button
-                        onClick={() => startEditing(latestGoal)}
-                        className="px-4 py-1.5 text-sm font-semibold rounded bg-slate-700 text-white hover:bg-slate-800"
-                      >
-                        Update
-                      </button>
-                      <button
-                        onClick={() => handleDelete(latestGoal?.id)}
-                        className="px-4 py-1.5 text-sm font-semibold rounded bg-red-600 text-white hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-
-                  {role === "MANAGER" && latestGoal?.status === "SUBMITTED" && (
-                    <>
-                      <button
-                        onClick={() => handleApprove(latestGoal?.id)}
-                        className="px-4 py-1.5 text-sm font-semibold rounded bg-green-600 text-white hover:bg-green-700"
-                      >
-                        Approve
-                      </button>
-
-                      <button
-                        onClick={() => handleReject(latestGoal?.id)}
-                        className="px-4 py-1.5 text-sm font-semibold rounded bg-red-600 text-white hover:bg-red-700"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
+                  <button
+                    onClick={() => handleReject(goal.id)}
+                    className="px-4 py-1.5 text-sm font-semibold rounded bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         );
       })}

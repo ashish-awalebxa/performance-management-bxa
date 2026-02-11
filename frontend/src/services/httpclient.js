@@ -8,7 +8,6 @@ const httpClient = axios.create({
   }
 });
 
-// Attach JWT to every request
 httpClient.interceptors.request.use((config) => {
   const token = authStore.getState().token;
 
@@ -18,5 +17,22 @@ httpClient.interceptors.request.use((config) => {
 
   return config;
 });
+
+httpClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const method = error?.config?.method?.toLowerCase();
+    const shouldAlert = method && method !== "get";
+
+    if (shouldAlert) {
+      const message = error?.response?.data?.message || "Operation failed. Please try again.";
+      if (typeof window !== "undefined") {
+        window.alert(message);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default httpClient;
