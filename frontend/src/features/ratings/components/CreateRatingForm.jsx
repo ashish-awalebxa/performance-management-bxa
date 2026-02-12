@@ -4,13 +4,12 @@ import { createRating } from "../ratings.store";
 const CreateRatingForm = () => {
   const [form, setForm] = useState({
     employeeId: "",
-    score: "",
     managerJustification: ""
   });
   const [loading, setLoading] = useState(false);
 
   const onCreate = async () => {
-    if (!form.employeeId || !form.score || !form.managerJustification) {
+    if (!form.employeeId || !form.managerJustification) {
       alert("Please fill all rating fields before creating.");
       return;
     }
@@ -19,11 +18,10 @@ const CreateRatingForm = () => {
       setLoading(true);
       await createRating({
         ...form,
-        employeeId: Number(form.employeeId),
-        score: Number(form.score)
+        employeeId: Number(form.employeeId)
       });
-      alert("Rating created successfully.");
-      setForm({ employeeId: "", score: "", managerJustification: "" });
+      alert("Rating created successfully. Score was auto-calculated from goals.");
+      setForm({ employeeId: "", managerJustification: "" });
     } catch (e) {
       alert(e?.response?.data?.message || "Failed to create rating.");
     } finally {
@@ -39,19 +37,6 @@ const CreateRatingForm = () => {
         value={form.employeeId}
         onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
       />
-
-      <select
-        className="border p-2 w-full"
-        value={form.score}
-        onChange={(e) => setForm({ ...form, score: e.target.value })}
-      >
-        <option value="">Select Score</option>
-        <option value="1">1 – Unsatisfactory</option>
-        <option value="2">2 – Needs Improvement</option>
-        <option value="3">3 – Meets Expectations</option>
-        <option value="4">4 – Exceeds Expectations</option>
-        <option value="5">5 – Outstanding</option>
-      </select>
 
       <textarea
         rows={3}
