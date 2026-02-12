@@ -3,6 +3,10 @@ package com.example.performance_management_system.rating.service;
 import com.example.performance_management_system.common.error.ErrorCode;
 import com.example.performance_management_system.common.exception.BusinessException;
 import com.example.performance_management_system.config.security.SecurityUtil;
+import com.example.performance_management_system.goal.model.Goal;
+import com.example.performance_management_system.goal.model.GoalStatus;
+import com.example.performance_management_system.goal.repository.GoalRepository;
+import com.example.performance_management_system.keyresult.model.KeyResult;
 import com.example.performance_management_system.performancecycle.model.CycleStatus;
 import com.example.performance_management_system.performancecycle.service.PerformanceCycleService;
 import com.example.performance_management_system.rating.dto.CalibrateRatingRequest;
@@ -29,17 +33,20 @@ public class RatingService {
     private final PerformanceCycleService cycleService;
     private final HierarchyService hierarchyService;
     private final UserRepository userRepository;
+    private final GoalRepository goalRepository;
 
     public RatingService(
             RatingRepository repository,
             PerformanceCycleService cycleService,
             HierarchyService hierarchyService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            GoalRepository goalRepository
     ) {
         this.repository = repository;
         this.cycleService = cycleService;
         this.hierarchyService = hierarchyService;
         this.userRepository = userRepository;
+        this.goalRepository = goalRepository;
     }
 
     /* ================= CREATE ================= */
@@ -73,7 +80,7 @@ public class RatingService {
 
         rating.setManagerId(managerId);
 
-        rating.setScore(req.score);
+        rating.setScore(calculateScoreFromGoals(req.employeeId));
         rating.setManagerJustification(req.managerJustification);
 
         return repository.save(rating);
@@ -293,6 +300,59 @@ public class RatingService {
         return ratings;
     }
 
+
+    private Double calculateScoreFromGoals(Long employeeId) {
+        var activeCycle = cycleService.getActiveCycle();
+
+        List<Goal> goals = goalRepository.findByEmployeeIdAndPerformanceCycle_Id(
+                employeeId,
+                activeCycle.getId()
+        );
+
+        if (goals.isEmpty()) {
+            return 1.0;
+        }
+
+        double averageScore = goals.stream()
+                .mapToDouble(this::calculateGoalScore)
+                .average()
+                .orElse(1.0);
+
+        double boundedScore = Math.max(1.0, Math.min(5.0, averageScore));
+        return Math.round(boundedScore * 100.0) / 100.0;
+    }
+
+    private double calculateGoalScore(Goal goal) {
+        double progress = goal.getKeyResults().stream()
+                .mapToDouble(this::calculateKeyResultProgress)
+                .average()
+                .orElse(0.0);
+
+        double statusWeight = mapGoalStatusWeight(goal.getStatus());
+
+        return progress * statusWeight * 5.0;
+    }
+
+    private double calculateKeyResultProgress(KeyResult keyResult) {
+        if (keyResult.getTargetValue() == null || keyResult.getTargetValue() <= 0) {
+            return 0.0;
+        }
+
+        double current = keyResult.getCurrentValue() == null ? 0.0 : keyResult.getCurrentValue();
+        return Math.max(0.0, Math.min(1.0, current / keyResult.getTargetValue()));
+    }
+
+    private double mapGoalStatusWeight(GoalStatus status) {
+        return switch (status) {
+            case COMPLETED -> 1.0;
+            case APPROVED -> 0.9;
+            case SUBMITTED -> 0.75;
+            case DRAFT -> 0.5;
+            case REJECTED -> 0.2;
+            case ARCHIVED -> 0.0;
+        };
+    }
+
     /* ================= UPDATE ================= */
 
     @PreAuthorize("hasRole('MANAGER')")
@@ -321,7 +381,7 @@ public class RatingService {
             );
         }
 
-        rating.setScore(score);
+        rating.setScore(calculateScoreFromGoals(rating.getEmployeeId()));
         rating.setManagerJustification(justification);
 
         return repository.save(rating);
