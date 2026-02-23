@@ -32,7 +32,7 @@ public class ReviewController {
         Long employeeId = SecurityUtil.userId();
 
         return service.getMyActiveReview(employeeId)
-                .map(review -> ResponseEntity.ok(toResponse(review)))
+                .map(review -> ResponseEntity.ok(review))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 

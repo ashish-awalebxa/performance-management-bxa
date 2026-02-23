@@ -5,6 +5,7 @@ import com.example.performance_management_system.common.exception.BusinessExcept
 import com.example.performance_management_system.config.security.SecurityUtil;
 import com.example.performance_management_system.review.dto.ReviewResponse;
 import com.example.performance_management_system.review.model.Review;
+import com.example.performance_management_system.review.model.ReviewStatus;
 import com.example.performance_management_system.review.repository.ReviewRepository;
 import com.example.performance_management_system.reviewcycle.model.ReviewCycleStatus;
 import com.example.performance_management_system.reviewcycle.repository.ReviewCycleRepository;
@@ -22,18 +23,21 @@ import java.util.Optional;
 @Service
 public class ReviewService {
 
-    private final ReviewRepository reviewRepository;
+    private final ReviewRepository repository;
     private final ReviewCycleRepository reviewCycleRepository;
     private final HierarchyService hierarchyService;
+    private final ReviewRepository reviewRepository;
 
     public ReviewService(
-            ReviewRepository reviewRepository,
+            ReviewRepository repository,
             ReviewCycleRepository reviewCycleRepository,
-            HierarchyService hierarchyService
+            HierarchyService hierarchyService,
+            ReviewRepository reviewRepository
     ) {
-        this.reviewRepository = reviewRepository;
+        this.repository = repository;
         this.reviewCycleRepository = reviewCycleRepository;
         this.hierarchyService = hierarchyService;
+        this.reviewRepository = reviewRepository;
     }
 
     @Transactional
@@ -51,7 +55,7 @@ public class ReviewService {
                         ))
         );
 
-        return reviewRepository.save(review);
+        return repository.save(review);
     }
 
     @PreAuthorize("hasRole('EMPLOYEE')")
@@ -87,7 +91,7 @@ public class ReviewService {
         review.submitSelfReview();
         review.setSelfReviewComments(comments);
 
-        return reviewRepository.save(review);
+        return repository.save(review);
     }
 
     @PreAuthorize("hasRole('MANAGER')")
@@ -125,11 +129,11 @@ public class ReviewService {
         review.submitManagerReview();
         review.setManagerReviewComments(comments);
 
-        return reviewRepository.save(review);
+        return repository.save(review);
     }
 
     private Review get(Long id) {
-        return reviewRepository.findById(id)
+        return repository.findById(id)
                 .orElseThrow(() -> new BusinessException(
                         HttpStatus.NOT_FOUND,
                         ErrorCode.REVIEW_NOT_FOUND,
@@ -142,14 +146,14 @@ public class ReviewService {
             int page,
             int size
     ) {
-        return reviewRepository.findByManagerId(
+        return repository.findByManagerId(
                 managerId,
                 PageRequest.of(page, size)
         );
     }
 
     public Optional<Review> getMyActiveReview(Long employeeId) {
-        return reviewRepository.findByEmployeeIdAndReviewCycle_Status(
+        return repository.findByEmployeeIdAndReviewCycle_Status(
                 employeeId,
                 ReviewCycleStatus.ACTIVE
         );
@@ -158,9 +162,9 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public List<ReviewResponse> getTeamReviews(Long managerId) {
 
-        List<Review> reviews = reviewRepository.findByManagerIdAndReviewCycle_StatusOrderByCreatedAtDesc(
+        List<Review> reviews = reviewRepository.findTeamReviews(
                 managerId,
-                ReviewCycleStatus.ACTIVE
+                ReviewStatus.SELF_REVIEW_SUBMITTED
         );
 
         return reviews.stream().map(review -> {
