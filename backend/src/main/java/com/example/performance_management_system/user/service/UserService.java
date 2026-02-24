@@ -11,7 +11,7 @@ import com.example.performance_management_system.event.Actor;
 import com.example.performance_management_system.event.AuditEvent;
 import com.example.performance_management_system.event.DomainType;
 import com.example.performance_management_system.event.EventType;
-import com.example.performance_management_system.event.producer.AuditEventOutboxService;
+import com.example.performance_management_system.event.producer.AuditEventProducer;
 import com.example.performance_management_system.role.model.RoleEntity;
 import com.example.performance_management_system.role.repository.RoleRepository;
 import com.example.performance_management_system.user.dto.CreateUserRequest;
@@ -35,20 +35,20 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final DepartmentService departmentService;
     private final PasswordEncoder passwordEncoder;
-    private final AuditEventOutboxService auditEventOutboxService;
+    private final AuditEventProducer auditEventProducer;
 
     public UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             DepartmentService departmentService,
             PasswordEncoder passwordEncoder,
-            AuditEventOutboxService auditEventOutboxService
+            AuditEventProducer auditEventProducer
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.departmentService = departmentService;
         this.passwordEncoder = passwordEncoder;
-        this.auditEventOutboxService = auditEventOutboxService;
+        this.auditEventProducer = auditEventProducer;
     }
 
     @Transactional
@@ -205,7 +205,7 @@ public class UserService {
                 )
         );
 
-        auditEventOutboxService.enqueue(event);
+        auditEventProducer.publish(event);
 
         return updated;
     }
