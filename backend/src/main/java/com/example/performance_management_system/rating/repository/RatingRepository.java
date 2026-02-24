@@ -51,6 +51,8 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
             CycleStatus status
     );
 
+    Optional<Rating> findByEmployeeIdAndPerformanceCycle_Id(Long employeeId, Long cycleId);
+
 
     Optional<Rating> findByEmployeeIdAndStatus(
             Long employeeId,
